@@ -1,12 +1,17 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 
 interface UploadedFile {
+  id: string; // unique per upload, not per filename
   name: string;
   size: number;
   status: "uploading" | "complete" | "error";
-  progress: number;
+}
+
+let uploadCounter = 0;
+function nextUploadId() {
+  return `upload-${++uploadCounter}-${Date.now()}`;
 }
 
 export function UploadZone({ token }: { token: string }) {
@@ -14,17 +19,19 @@ export function UploadZone({ token }: { token: string }) {
   const [isDragging, setIsDragging] = useState(false);
 
   const handleFiles = useCallback(async (fileList: FileList) => {
-    const newFiles = Array.from(fileList).map((f) => ({
-      name: f.name,
-      size: f.size,
-      status: "uploading" as const,
-      progress: 0,
+    const uploads = Array.from(fileList).map((f) => ({
+      file: f,
+      entry: {
+        id: nextUploadId(),
+        name: f.name,
+        size: f.size,
+        status: "uploading" as const,
+      },
     }));
 
-    setFiles((prev) => [...prev, ...newFiles]);
+    setFiles((prev) => [...prev, ...uploads.map((u) => u.entry)]);
 
-    for (let i = 0; i < fileList.length; i++) {
-      const file = fileList[i];
+    for (const { file, entry } of uploads) {
       const formData = new FormData();
       formData.append("file", file);
       formData.append("token", token);
@@ -39,13 +46,13 @@ export function UploadZone({ token }: { token: string }) {
 
         setFiles((prev) =>
           prev.map((f) =>
-            f.name === file.name ? { ...f, status: "complete", progress: 100 } : f
+            f.id === entry.id ? { ...f, status: "complete" } : f
           )
         );
       } catch {
         setFiles((prev) =>
           prev.map((f) =>
-            f.name === file.name ? { ...f, status: "error", progress: 0 } : f
+            f.id === entry.id ? { ...f, status: "error" } : f
           )
         );
       }
@@ -99,8 +106,8 @@ export function UploadZone({ token }: { token: string }) {
 
       {files.length > 0 && (
         <div className="space-y-2">
-          {files.map((file, i) => (
-            <div key={`${file.name}-${i}`} className="flex items-center justify-between p-3 bg-white rounded-lg border">
+          {files.map((file) => (
+            <div key={file.id} className="flex items-center justify-between p-3 bg-white rounded-lg border">
               <div className="flex items-center gap-3 min-w-0">
                 <span className="text-lg">
                   {file.status === "complete" ? "✅" : file.status === "error" ? "❌" : "⏳"}

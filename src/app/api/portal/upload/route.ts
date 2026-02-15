@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/server/db";
 import { magicLinks, clientDocuments } from "@/server/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, lt, sql } from "drizzle-orm";
 import { uploadDocument } from "@/lib/r2";
 import { isAfter } from "date-fns";
 
@@ -16,6 +16,22 @@ const ALLOWED_TYPES = new Set([
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   "text/csv",
 ]);
+
+/**
+ * Extract a single client IP from potentially comma-separated
+ * x-forwarded-for header, truncated to fit varchar(45).
+ */
+function parseClientIp(req: Request): string {
+  const xff = req.headers.get("x-forwarded-for");
+  if (xff) {
+    // Take first IP (actual client), trim whitespace
+    const firstIp = xff.split(",")[0].trim();
+    return firstIp.slice(0, 45);
+  }
+  const cfIp = req.headers.get("cf-connecting-ip");
+  if (cfIp) return cfIp.slice(0, 45);
+  return "unknown";
+}
 
 export async function POST(req: Request) {
   try {
@@ -53,7 +69,25 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Link has expired" }, { status: 403 });
     }
 
-    if (link.maxUsages && (link.usageCount ?? 0) >= link.maxUsages) {
+    // Atomically increment usage count and check limit in one query.
+    // This prevents race conditions where concurrent uploads both pass
+    // the check and exceed maxUsages.
+    const [updated] = await db.update(magicLinks)
+      .set({
+        usageCount: sql`${magicLinks.usageCount} + 1`,
+        lastUsedAt: new Date(),
+      })
+      .where(and(
+        eq(magicLinks.id, link.id),
+        eq(magicLinks.isRevoked, false),
+        // Only increment if we're still under the limit
+        link.maxUsages
+          ? lt(magicLinks.usageCount, link.maxUsages)
+          : undefined,
+      ))
+      .returning();
+
+    if (!updated) {
       return NextResponse.json({ error: "Link usage limit reached" }, { status: 403 });
     }
 
@@ -75,16 +109,8 @@ export async function POST(req: Request) {
       r2Bucket: process.env.R2_BUCKET_NAME || "chase-md-documents",
       status: "uploaded",
       uploadedVia: "portal",
-      uploadedByIp: req.headers.get("x-forwarded-for") || req.headers.get("cf-connecting-ip") || "unknown",
+      uploadedByIp: parseClientIp(req),
     }).returning();
-
-    // Update magic link usage count
-    await db.update(magicLinks)
-      .set({
-        usageCount: (link.usageCount ?? 0) + 1,
-        lastUsedAt: new Date(),
-      })
-      .where(eq(magicLinks.id, link.id));
 
     return NextResponse.json({
       success: true,
