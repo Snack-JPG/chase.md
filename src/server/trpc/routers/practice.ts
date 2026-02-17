@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { orgProcedure, router } from "../init";
-import { practices, auditLog } from "@/server/db/schema";
-import { eq } from "drizzle-orm";
+import { practices, auditLog, xeroConnections } from "@/server/db/schema";
+import { eq, and } from "drizzle-orm";
 
 export const practiceRouter = router({
   get: orgProcedure.query(async ({ ctx }) => {
@@ -41,4 +41,23 @@ export const practiceRouter = router({
 
       return updated;
     }),
+
+  xeroStatus: orgProcedure.query(async ({ ctx }) => {
+    const connection = await ctx.db.query.xeroConnections.findFirst({
+      where: and(
+        eq(xeroConnections.practiceId, ctx.practiceId),
+        eq(xeroConnections.status, "active"),
+      ),
+    });
+
+    if (!connection) {
+      return { connected: false as const };
+    }
+
+    return {
+      connected: true as const,
+      tenantName: connection.xeroTenantName,
+      connectedAt: connection.connectedAt,
+    };
+  }),
 });

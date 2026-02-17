@@ -455,6 +455,39 @@ export const auditLog = pgTable("audit_log", {
 ]);
 
 // ============================================================
+// XERO INTEGRATION
+// ============================================================
+
+export const xeroConnectionStatusEnum = pgEnum("xero_connection_status", [
+  "active", "expired", "revoked",
+]);
+
+export const xeroConnections = pgTable("xero_connections", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  practiceId: uuid("practice_id").notNull().references(() => practices.id),
+
+  xeroTenantId: varchar("xero_tenant_id", { length: 255 }).notNull(),
+  xeroTenantName: varchar("xero_tenant_name", { length: 255 }),
+  connectionId: varchar("connection_id", { length: 255 }).notNull(),
+
+  accessToken: text("access_token").notNull(),
+  refreshToken: text("refresh_token").notNull(),
+  tokenExpiresAt: timestamp("token_expires_at", { withTimezone: true }).notNull(),
+
+  scopes: text("scopes"),
+  status: xeroConnectionStatusEnum("status").default("active").notNull(),
+
+  connectedAt: timestamp("connected_at", { withTimezone: true }).defaultNow().notNull(),
+  disconnectedAt: timestamp("disconnected_at", { withTimezone: true }),
+
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => [
+  uniqueIndex("xero_connections_practice_idx").on(t.practiceId),
+  uniqueIndex("xero_connections_tenant_idx").on(t.xeroTenantId),
+]);
+
+// ============================================================
 // RELATIONS
 // ============================================================
 
@@ -464,6 +497,11 @@ export const practicesRelations = relations(practices, ({ many }) => ({
   campaigns: many(chaseCampaigns),
   documentTemplates: many(documentTemplates),
   whatsappTemplates: many(whatsappTemplates),
+  xeroConnections: many(xeroConnections),
+}));
+
+export const xeroConnectionsRelations = relations(xeroConnections, ({ one }) => ({
+  practice: one(practices, { fields: [xeroConnections.practiceId], references: [practices.id] }),
 }));
 
 export const usersRelations = relations(users, ({ one }) => ({

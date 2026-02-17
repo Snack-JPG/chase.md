@@ -3,6 +3,84 @@
 import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc/client";
 
+function XeroConnectionCard() {
+  const xeroStatus = trpc.practice.xeroStatus.useQuery();
+  const [disconnecting, setDisconnecting] = useState(false);
+
+  const handleDisconnect = async () => {
+    if (!confirm("Are you sure you want to disconnect Xero?")) return;
+    setDisconnecting(true);
+    try {
+      await fetch("/api/xero/disconnect", { method: "POST" });
+      xeroStatus.refetch();
+    } catch {
+      alert("Failed to disconnect Xero");
+    } finally {
+      setDisconnecting(false);
+    }
+  };
+
+  if (xeroStatus.isLoading) {
+    return (
+      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+        <div className="flex items-center gap-3">
+          <span className="text-2xl">📊</span>
+          <div>
+            <p className="font-medium text-sm">Xero</p>
+            <p className="text-xs text-gray-500">Loading...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const data = xeroStatus.data;
+
+  if (data?.connected) {
+    return (
+      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+        <div className="flex items-center gap-3">
+          <span className="text-2xl">📊</span>
+          <div>
+            <p className="font-medium text-sm">Xero</p>
+            <p className="text-xs text-gray-500">
+              Connected to <strong>{data.tenantName}</strong>
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xs px-2.5 py-1 rounded-full bg-green-100 text-green-700">Connected</span>
+          <button
+            onClick={handleDisconnect}
+            disabled={disconnecting}
+            className="text-xs px-3 py-1 rounded-full border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-50"
+          >
+            {disconnecting ? "Disconnecting..." : "Disconnect"}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+      <div className="flex items-center gap-3">
+        <span className="text-2xl">📊</span>
+        <div>
+          <p className="font-medium text-sm">Xero</p>
+          <p className="text-xs text-gray-500">Import clients and push documents to Xero</p>
+        </div>
+      </div>
+      <a
+        href="/api/xero/connect"
+        className="text-xs px-3 py-1.5 rounded-lg bg-[#13B5EA] text-white hover:bg-[#0e9ac7] font-medium"
+      >
+        Connect to Xero
+      </a>
+    </div>
+  );
+}
+
 export default function SettingsPage() {
   const practiceQuery = trpc.practice.get.useQuery();
   const updatePractice = trpc.practice.update.useMutation({
@@ -160,6 +238,10 @@ export default function SettingsPage() {
       {/* Integrations */}
       <div className="bg-white rounded-xl border p-6 space-y-4">
         <h2 className="font-semibold text-gray-900">Integrations</h2>
+
+        {/* Xero Integration */}
+        <XeroConnectionCard />
+
         {[
           { icon: "💬", name: "WhatsApp Business", desc: "Send chases via WhatsApp", connected: !!practiceQuery.data?.twilioWhatsappNumber },
           { icon: "📧", name: "Custom Email Domain", desc: "Send from chase@yourdomain.co.uk", connected: !!practiceQuery.data?.customEmailDomain },
