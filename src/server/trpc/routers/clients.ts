@@ -100,6 +100,62 @@ export const clientsRouter = router({
     };
   }),
 
+  bulkCreate: orgProcedure
+    .input(z.object({
+      clients: z.array(z.object({
+        firstName: z.string().min(1),
+        lastName: z.string().min(1),
+        email: z.string().email().optional(),
+        phone: z.string().optional(),
+        companyName: z.string().optional(),
+        clientType: z.enum(["sole_trader", "limited_company", "partnership", "llp", "trust", "individual"]).default("individual"),
+      })).min(1).max(500),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      let created = 0;
+      let skipped = 0;
+      const errors: string[] = [];
+
+      // Get existing emails for dedup
+      const existing = await ctx.db.query.clients.findMany({
+        where: eq(clients.practiceId, ctx.practiceId),
+        columns: { email: true },
+      });
+      const existingEmails = new Set(
+        existing.map((c) => c.email?.toLowerCase()).filter(Boolean)
+      );
+
+      const toInsert = [];
+      for (const client of input.clients) {
+        const email = client.email?.toLowerCase();
+        if (email && existingEmails.has(email)) {
+          skipped++;
+          continue;
+        }
+        if (email) existingEmails.add(email);
+        toInsert.push({
+          ...client,
+          email: email || null,
+          practiceId: ctx.practiceId,
+        });
+      }
+
+      if (toInsert.length > 0) {
+        await ctx.db.insert(clients).values(toInsert);
+        created = toInsert.length;
+      }
+
+      await ctx.db.insert(auditLog).values({
+        practiceId: ctx.practiceId,
+        action: "bulk_action",
+        entityType: "client",
+        userId: ctx.internalUserId,
+        changes: { type: "csv_import", created, skipped },
+      });
+
+      return { created, skipped, errors };
+    }),
+
   xpmJobs: orgProcedure
     .input(z.object({ clientId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc/client";
 import { formatDistanceToNow } from "date-fns";
+import { CsvImportModal } from "@/components/csv-import-modal";
 
 function ClientTypeLabel({ type }: { type: string }) {
   const labels: Record<string, { label: string; color: string }> = {
@@ -32,6 +33,7 @@ function XeroBadge() {
 export default function ClientsPage() {
   const [search, setSearch] = useState("");
   const [showAdd, setShowAdd] = useState(false);
+  const [showCsvImport, setShowCsvImport] = useState(false);
   const [syncToast, setSyncToast] = useState<string | null>(null);
 
   const clientsQuery = trpc.clients.list.useQuery();
@@ -104,7 +106,10 @@ export default function ClientsPage() {
               )}
             </button>
           )}
-          <button className="px-4 py-2 bg-white border text-gray-700 rounded-lg hover:bg-gray-50 text-sm font-medium">
+          <button
+            onClick={() => setShowCsvImport(true)}
+            className="px-4 py-2 bg-white border text-gray-700 rounded-lg hover:bg-gray-50 text-sm font-medium"
+          >
             Import CSV
           </button>
           <button
@@ -211,6 +216,14 @@ export default function ClientsPage() {
             </tbody>
           </table>
         </div>
+      )}
+
+      {/* CSV Import Modal */}
+      {showCsvImport && (
+        <CsvImportModal
+          onClose={() => setShowCsvImport(false)}
+          onSuccess={() => clientsQuery.refetch()}
+        />
       )}
 
       {/* Add Client Modal */}
