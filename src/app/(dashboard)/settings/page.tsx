@@ -328,6 +328,7 @@ export default function SettingsPage() {
 
         {[
           { icon: "💬", name: "WhatsApp Business", desc: "Send chases via WhatsApp", connected: !!practiceQuery.data?.twilioWhatsappNumber },
+          { icon: "📱", name: "SMS (Twilio)", desc: "Chase clients via text message", connected: !!practiceQuery.data?.twilioSmsNumber },
           { icon: "📧", name: "Custom Email Domain", desc: "Send from chase@yourdomain.co.uk", connected: !!practiceQuery.data?.customEmailDomain },
           { icon: "💳", name: "Stripe Billing", desc: "Manage your subscription", connected: !!practiceQuery.data?.stripeSubscriptionId },
         ].map((i) => (

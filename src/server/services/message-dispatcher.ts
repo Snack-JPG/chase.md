@@ -7,6 +7,7 @@ import { chaseMessages, clients, practices } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
 import { sendChaseEmail } from "./email-sender";
 import { sendWhatsAppChase } from "./whatsapp-sender";
+import { sendSmsChase } from "./sms-sender";
 
 /**
  * Dispatch a queued chase message to the appropriate channel.
@@ -68,10 +69,25 @@ export async function dispatchMessage(messageId: string) {
       break;
     }
 
-    case "sms":
-      // TODO: SMS via Twilio (V2)
-      await markFailed(messageId, "SMS channel not yet implemented");
+    case "sms": {
+      const smsNumber = client.phone;
+      if (!smsNumber) {
+        await markFailed(messageId, "Client has no phone number");
+        return;
+      }
+      if (!practice.twilioSmsNumber) {
+        await markFailed(messageId, "Practice has no SMS number configured");
+        return;
+      }
+
+      await sendSmsChase({
+        messageId,
+        to: smsNumber,
+        from: practice.twilioSmsNumber,
+        bodyText: message.bodyText,
+      });
       break;
+    }
   }
 }
 

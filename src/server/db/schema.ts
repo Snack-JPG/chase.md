@@ -89,6 +89,7 @@ export const practices = pgTable("practices", {
 
   twilioAccountSid: varchar("twilio_account_sid", { length: 255 }),
   twilioWhatsappNumber: varchar("twilio_whatsapp_number", { length: 50 }),
+  twilioSmsNumber: varchar("twilio_sms_number", { length: 50 }),
   whatsappBusinessId: varchar("whatsapp_business_id", { length: 255 }),
 
   resendDomainId: varchar("resend_domain_id", { length: 255 }),
