@@ -11,10 +11,11 @@
  */
 
 import { db } from "@/server/db";
-import { chaseEnrollments, chaseMessages, clients, chaseCampaigns, practices, magicLinks } from "@/server/db/schema";
+import { chaseEnrollments, chaseMessages, clients, chaseCampaigns, practices, magicLinks, auditLog } from "@/server/db/schema";
 import { eq, and, lte, isNull, not } from "drizzle-orm";
 import { addDays, isWeekend, setHours, setMinutes, isBefore, isAfter } from "date-fns";
 import crypto from "crypto";
+import { renderChaseEmail } from "./chase-email-template";
 
 // Escalation levels in order
 const ESCALATION_ORDER = ["gentle", "reminder", "firm", "urgent", "escalate"] as const;
@@ -179,7 +180,7 @@ export async function processChase(chaseable: ChaseableEnrollment) {
   const portalUrl = `${process.env.NEXT_PUBLIC_APP_URL}/p/${magicToken}`;
 
   // Generate message content based on escalation level
-  const messageContent = generateChaseMessage({
+  const messageContent = await generateChaseMessage({
     clientFirstName: client.firstName,
     practiceName: practice.name,
     escalationLevel,
@@ -203,6 +204,16 @@ export async function processChase(chaseable: ChaseableEnrollment) {
     bodyHtml: messageContent.bodyHtml,
     status: "queued",
   }).returning();
+
+  // Audit log for chase sent
+  await db.insert(auditLog).values({
+    practiceId: practice.id,
+    action: "send",
+    entityType: "chase_message",
+    entityId: message.id,
+    clientId: client.id,
+    metadata: { channel, escalationLevel, chaseNumber: chaseNumber + 1 },
+  });
 
   // Calculate and set next chase date
   const nextChaseAt = calculateNextChaseDate(
@@ -230,7 +241,7 @@ export async function processChase(chaseable: ChaseableEnrollment) {
 /**
  * Generate chase message content based on escalation level.
  */
-function generateChaseMessage(params: {
+async function generateChaseMessage(params: {
   clientFirstName: string;
   practiceName: string;
   escalationLevel: EscalationLevel;
@@ -266,10 +277,23 @@ function generateChaseMessage(params: {
   };
 
   const template = templates[escalationLevel];
+
+  let bodyHtml: string | null = null;
+  try {
+    bodyHtml = await renderChaseEmail({
+      clientFirstName,
+      practiceName,
+      portalUrl,
+      bodyText: template.bodyText,
+    });
+  } catch (err) {
+    console.error("Failed to render email template:", err);
+  }
+
   return {
     subject: template.subject,
     bodyText: template.bodyText,
-    bodyHtml: null, // TODO: React Email templates
+    bodyHtml,
   };
 }
 

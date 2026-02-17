@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { orgProcedure, router } from "../init";
-import { chaseCampaigns } from "@/server/db/schema";
+import { chaseCampaigns, auditLog } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
 
 export const campaignsRouter = router({
@@ -42,6 +42,16 @@ export const campaignsRouter = router({
         createdBy: ctx.internalUserId,
         deadlineDate: new Date(input.deadlineDate),
       }).returning();
+
+      await ctx.db.insert(auditLog).values({
+        practiceId: ctx.practiceId,
+        action: "create",
+        entityType: "campaign",
+        entityId: campaign.id,
+        userId: ctx.internalUserId,
+        changes: input,
+      });
+
       return campaign;
     }),
 });

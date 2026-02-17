@@ -1,21 +1,8 @@
 "use client";
 
 import { useState } from "react";
-
-// TODO: Wire up to tRPC once DB is connected
-// import { trpc } from "@/lib/trpc-client";
-
-interface Client {
-  id: string;
-  firstName: string;
-  lastName: string;
-  companyName?: string;
-  email?: string;
-  phone?: string;
-  clientType: string;
-  chaseEnabled: boolean;
-  lastChasedAt?: string;
-}
+import { trpc } from "@/lib/trpc/client";
+import { formatDistanceToNow } from "date-fns";
 
 function ClientTypeLabel({ type }: { type: string }) {
   const labels: Record<string, { label: string; color: string }> = {
@@ -36,8 +23,17 @@ function ClientTypeLabel({ type }: { type: string }) {
 
 export default function ClientsPage() {
   const [search, setSearch] = useState("");
-  const clients: Client[] = []; // TODO: from tRPC
+  const [showAdd, setShowAdd] = useState(false);
 
+  const clientsQuery = trpc.clients.list.useQuery();
+  const createClient = trpc.clients.create.useMutation({
+    onSuccess: () => {
+      clientsQuery.refetch();
+      setShowAdd(false);
+    },
+  });
+
+  const clients = clientsQuery.data ?? [];
   const filtered = clients.filter((c) =>
     `${c.firstName} ${c.lastName} ${c.companyName || ""} ${c.email || ""}`
       .toLowerCase()
@@ -49,17 +45,28 @@ export default function ClientsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Clients</h1>
-          <p className="text-sm text-gray-500 mt-1">{clients.length} total clients</p>
+          <p className="text-sm text-gray-500 mt-1">
+            {clientsQuery.isLoading ? "Loading..." : `${clients.length} total clients`}
+          </p>
         </div>
         <div className="flex gap-3">
           <button className="px-4 py-2 bg-white border text-gray-700 rounded-lg hover:bg-gray-50 text-sm font-medium">
             Import CSV
           </button>
-          <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 text-sm font-medium">
+          <button
+            onClick={() => setShowAdd(true)}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 text-sm font-medium"
+          >
             Add Client
           </button>
         </div>
       </div>
+
+      {clientsQuery.isError && (
+        <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg p-3">
+          Failed to load clients. {clientsQuery.error?.message}
+        </div>
+      )}
 
       {/* Search */}
       <div className="relative">
@@ -73,18 +80,31 @@ export default function ClientsPage() {
       </div>
 
       {/* Client list */}
-      {filtered.length === 0 ? (
+      {clientsQuery.isLoading ? (
+        <div className="bg-white rounded-xl border p-12 text-center">
+          <p className="text-gray-400">Loading clients...</p>
+        </div>
+      ) : filtered.length === 0 ? (
         <div className="bg-white rounded-xl border p-12 text-center">
           <div className="text-4xl mb-3">👥</div>
-          <p className="text-lg font-medium text-gray-700">No clients yet</p>
-          <p className="text-sm text-gray-500 mt-1">
-            Import from a CSV, connect Xero/Sage, or add clients manually.
+          <p className="text-lg font-medium text-gray-700">
+            {search ? "No clients match your search" : "No clients yet"}
           </p>
-          <div className="flex gap-3 justify-center mt-4">
-            <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 text-sm">
-              Add Your First Client
-            </button>
-          </div>
+          {!search && (
+            <>
+              <p className="text-sm text-gray-500 mt-1">
+                Import from a CSV, connect Xero/Sage, or add clients manually.
+              </p>
+              <div className="flex gap-3 justify-center mt-4">
+                <button
+                  onClick={() => setShowAdd(true)}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 text-sm"
+                >
+                  Add Your First Client
+                </button>
+              </div>
+            </>
+          )}
         </div>
       ) : (
         <div className="bg-white rounded-xl border overflow-hidden">
@@ -114,7 +134,9 @@ export default function ClientsPage() {
                     {client.email || client.phone || "—"}
                   </td>
                   <td className="px-4 py-3 text-gray-500">
-                    {client.lastChasedAt || "Never"}
+                    {client.lastChasedAt
+                      ? formatDistanceToNow(new Date(client.lastChasedAt), { addSuffix: true })
+                      : "Never"}
                   </td>
                   <td className="px-4 py-3">
                     <span className={`text-xs px-2 py-0.5 rounded-full ${
@@ -131,6 +153,95 @@ export default function ClientsPage() {
           </table>
         </div>
       )}
+
+      {/* Add Client Modal */}
+      {showAdd && (
+        <AddClientModal
+          onClose={() => setShowAdd(false)}
+          onSubmit={(data) => createClient.mutate(data)}
+          isLoading={createClient.isPending}
+          error={createClient.error?.message}
+        />
+      )}
+    </div>
+  );
+}
+
+function AddClientModal({ onClose, onSubmit, isLoading, error }: {
+  onClose: () => void;
+  onSubmit: (data: { firstName: string; lastName: string; email?: string; phone?: string; clientType: "sole_trader" | "limited_company" | "partnership" | "llp" | "trust" | "individual" }) => void;
+  isLoading: boolean;
+  error?: string;
+}) {
+  const [form, setForm] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    clientType: "sole_trader" as const,
+  });
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl max-w-lg w-full p-6 space-y-5">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-bold">Add Client</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl">✕</button>
+        </div>
+        {error && <div className="text-red-600 text-sm bg-red-50 p-2 rounded">{error}</div>}
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+              <input type="text" value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })}
+                className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+              <input type="text" value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })}
+                className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })}
+              className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+            <input type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })}
+              className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Client Type</label>
+            <select value={form.clientType} onChange={(e) => setForm({ ...form, clientType: e.target.value as typeof form.clientType })}
+              className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="sole_trader">Sole Trader</option>
+              <option value="limited_company">Limited Company</option>
+              <option value="partnership">Partnership</option>
+              <option value="llp">LLP</option>
+              <option value="trust">Trust</option>
+              <option value="individual">Individual</option>
+            </select>
+          </div>
+        </div>
+        <div className="flex gap-3 pt-2">
+          <button onClick={onClose} className="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm font-medium">Cancel</button>
+          <button
+            onClick={() => onSubmit({
+              firstName: form.firstName,
+              lastName: form.lastName,
+              email: form.email || undefined,
+              phone: form.phone || undefined,
+              clientType: form.clientType,
+            })}
+            disabled={isLoading || !form.firstName || !form.lastName}
+            className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-500 text-sm font-medium disabled:opacity-50"
+          >
+            {isLoading ? "Adding..." : "Add Client"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

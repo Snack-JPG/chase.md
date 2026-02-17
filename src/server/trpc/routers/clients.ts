@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { orgProcedure, router } from "../init";
-import { clients } from "@/server/db/schema";
+import { clients, auditLog } from "@/server/db/schema";
 import { eq, and } from "drizzle-orm";
 
 export const clientsRouter = router({
@@ -44,6 +44,16 @@ export const clientsRouter = router({
         ...input,
         practiceId: ctx.practiceId,
       }).returning();
+
+      await ctx.db.insert(auditLog).values({
+        practiceId: ctx.practiceId,
+        action: "create",
+        entityType: "client",
+        entityId: client.id,
+        userId: ctx.internalUserId,
+        changes: input,
+      });
+
       return client;
     }),
 });

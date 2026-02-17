@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { db } from "@/server/db";
-import { magicLinks, clientDocuments } from "@/server/db/schema";
+import { magicLinks, clientDocuments, auditLog } from "@/server/db/schema";
 import { eq, and, lt, sql } from "drizzle-orm";
 import { uploadDocument } from "@/lib/r2";
 import { isAfter } from "date-fns";
+import { classifyDocument } from "@/server/services/document-classifier";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ALLOWED_TYPES = new Set([
@@ -111,6 +112,22 @@ export async function POST(req: Request) {
       uploadedVia: "portal",
       uploadedByIp: parseClientIp(req),
     }).returning();
+
+    // Trigger AI classification in the background (non-blocking)
+    classifyDocument(doc.id).catch((err) =>
+      console.error("AI classification failed for doc", doc.id, err)
+    );
+
+    // Audit log
+    await db.insert(auditLog).values({
+      practiceId: link.practiceId,
+      action: "upload",
+      entityType: "document",
+      entityId: doc.id,
+      clientId: link.clientId,
+      metadata: { fileName: file.name, fileSize: file.size, via: "portal" },
+      ipAddress: parseClientIp(req),
+    });
 
     return NextResponse.json({
       success: true,

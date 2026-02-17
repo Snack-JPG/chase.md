@@ -1,31 +1,34 @@
 import { NextResponse } from "next/server";
+import { Receiver } from "@upstash/qstash";
 import { runChaseTick } from "@/server/services/chase-engine";
 import { dispatchQueuedMessages } from "@/server/services/message-dispatcher";
 
+function getReceiver() {
+  return new Receiver({
+    currentSigningKey: process.env.QSTASH_CURRENT_SIGNING_KEY!,
+    nextSigningKey: process.env.QSTASH_NEXT_SIGNING_KEY!,
+  });
+}
+
 /**
  * Chase cron endpoint — called by QStash every 15 minutes during business hours.
- *
- * POST /api/cron/chase
- * Authorization: Bearer <QSTASH_CURRENT_SIGNING_KEY>
  */
 export async function POST(req: Request) {
-  // Verify QStash signature
-  const authHeader = req.headers.get("authorization");
-  const expectedToken = process.env.QSTASH_TOKEN;
+  const body = await req.text();
+  const signature = req.headers.get("upstash-signature");
 
-  if (!authHeader || !expectedToken) {
-    // In production, use proper QStash signature verification
-    // For now, simple bearer token check
-    if (authHeader !== `Bearer ${expectedToken}`) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  if (!signature) {
+    return NextResponse.json({ error: "Missing signature" }, { status: 401 });
   }
 
   try {
-    // Step 1: Find due enrollments and create chase messages
-    const chaseResult = await runChaseTick();
+    await getReceiver().verify({ signature, body });
+  } catch {
+    return NextResponse.json({ error: "Invalid QStash signature" }, { status: 401 });
+  }
 
-    // Step 2: Dispatch all queued messages
+  try {
+    const chaseResult = await runChaseTick();
     const dispatchResult = await dispatchQueuedMessages();
 
     return NextResponse.json({
