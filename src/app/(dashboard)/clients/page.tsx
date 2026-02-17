@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { trpc } from "@/lib/trpc/client";
 import { formatDistanceToNow } from "date-fns";
 import { CsvImportModal } from "@/components/csv-import-modal";
@@ -31,6 +32,7 @@ function XeroBadge() {
 }
 
 export default function ClientsPage() {
+  const router = useRouter();
   const [search, setSearch] = useState("");
   const [showAdd, setShowAdd] = useState(false);
   const [showCsvImport, setShowCsvImport] = useState(false);
@@ -179,7 +181,7 @@ export default function ClientsPage() {
             </thead>
             <tbody className="divide-y">
               {filtered.map((client) => (
-                <tr key={client.id} className="hover:bg-gray-50 cursor-pointer">
+                <tr key={client.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => router.push(`/clients/${client.id}`)}>
                   <td className="px-4 py-3">
                     <div className="flex items-center">
                       <div>

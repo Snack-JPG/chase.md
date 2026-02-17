@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { orgProcedure, router } from "../init";
-import { clients, auditLog, xeroConnections, xpmJobs } from "@/server/db/schema";
-import { eq, and } from "drizzle-orm";
+import { clients, auditLog, xeroConnections, xpmJobs, chaseMessages, chaseEnrollments } from "@/server/db/schema";
+import { eq, and, desc } from "drizzle-orm";
 import { syncContacts } from "@/lib/xero-sync";
 
 export const clientsRouter = router({
@@ -176,5 +176,46 @@ export const clientsRouter = router({
         ),
         orderBy: (j, { desc }) => [desc(j.updatedAt)],
       });
+    }),
+
+  messages: orgProcedure
+    .input(z.object({ clientId: z.string().uuid() }))
+    .query(async ({ ctx, input }) => {
+      return ctx.db.query.chaseMessages.findMany({
+        where: and(
+          eq(chaseMessages.clientId, input.clientId),
+          eq(chaseMessages.practiceId, ctx.practiceId),
+        ),
+        with: { campaign: true },
+        orderBy: (m, { desc }) => [desc(m.createdAt)],
+      });
+    }),
+
+  update: orgProcedure
+    .input(z.object({
+      id: z.string().uuid(),
+      chaseEnabled: z.boolean().optional(),
+      notes: z.string().optional(),
+      preferredChannel: z.enum(["email", "whatsapp", "sms"]).optional(),
+      tags: z.array(z.string()).optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { id, ...updates } = input;
+      const [updated] = await ctx.db
+        .update(clients)
+        .set({ ...updates, updatedAt: new Date() })
+        .where(and(eq(clients.id, id), eq(clients.practiceId, ctx.practiceId)))
+        .returning();
+
+      await ctx.db.insert(auditLog).values({
+        practiceId: ctx.practiceId,
+        action: "update",
+        entityType: "client",
+        entityId: id,
+        userId: ctx.internalUserId,
+        changes: updates,
+      });
+
+      return updated;
     }),
 });
