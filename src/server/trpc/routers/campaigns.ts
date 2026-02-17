@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { orgProcedure, router } from "../init";
 import { chaseCampaigns, auditLog } from "@/server/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 
 export const campaignsRouter = router({
   list: orgProcedure.query(async ({ ctx }) => {
@@ -53,5 +53,47 @@ export const campaignsRouter = router({
       });
 
       return campaign;
+    }),
+
+  xpmAutoEnroll: orgProcedure
+    .input(z.object({
+      campaignId: z.string().uuid(),
+      enabled: z.boolean(),
+      jobCategoryMappings: z.record(z.string(), z.boolean()).optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const campaign = await ctx.db.query.chaseCampaigns.findFirst({
+        where: and(
+          eq(chaseCampaigns.id, input.campaignId),
+          eq(chaseCampaigns.practiceId, ctx.practiceId),
+        ),
+      });
+
+      if (!campaign) {
+        throw new Error("Campaign not found");
+      }
+
+      const [updated] = await ctx.db
+        .update(chaseCampaigns)
+        .set({
+          xpmAutoEnroll: input.enabled,
+          ...(input.jobCategoryMappings !== undefined
+            ? { xpmJobCategoryMappings: input.jobCategoryMappings }
+            : {}),
+          updatedAt: new Date(),
+        })
+        .where(eq(chaseCampaigns.id, input.campaignId))
+        .returning();
+
+      await ctx.db.insert(auditLog).values({
+        practiceId: ctx.practiceId,
+        action: "update",
+        entityType: "campaign",
+        entityId: input.campaignId,
+        userId: ctx.internalUserId,
+        changes: { xpmAutoEnroll: input.enabled, jobCategoryMappings: input.jobCategoryMappings },
+      });
+
+      return updated;
     }),
 });

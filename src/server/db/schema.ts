@@ -221,6 +221,9 @@ export const chaseCampaigns = pgTable("chase_campaigns", {
   skipWeekends: boolean("skip_weekends").default(true),
   skipBankHolidays: boolean("skip_bank_holidays").default(true),
 
+  xpmAutoEnroll: boolean("xpm_auto_enroll").default(false),
+  xpmJobCategoryMappings: jsonb("xpm_job_category_mappings").default({}),
+
   totalEnrollments: integer("total_enrollments").default(0),
   completedEnrollments: integer("completed_enrollments").default(0),
 
@@ -491,6 +494,9 @@ export const xeroConnections = pgTable("xero_connections", {
 
   xeroUploadFolderId: varchar("xero_upload_folder_id", { length: 255 }),
 
+  xpmEnabled: boolean("xpm_enabled").default(false),
+  xpmStatusMappings: jsonb("xpm_status_mappings").default({}),
+
   connectedAt: timestamp("connected_at", { withTimezone: true }).defaultNow().notNull(),
   disconnectedAt: timestamp("disconnected_at", { withTimezone: true }),
 
@@ -499,6 +505,26 @@ export const xeroConnections = pgTable("xero_connections", {
 }, (t) => [
   uniqueIndex("xero_connections_practice_idx").on(t.practiceId),
   uniqueIndex("xero_connections_tenant_idx").on(t.xeroTenantId),
+]);
+
+export const xpmJobs = pgTable("xpm_jobs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  practiceId: uuid("practice_id").notNull().references(() => practices.id),
+  xeroJobId: varchar("xero_job_id", { length: 255 }).notNull(),
+  clientId: uuid("client_id").references(() => clients.id),
+  xeroClientId: varchar("xero_client_id", { length: 255 }),
+  jobName: varchar("job_name", { length: 255 }),
+  jobStatus: varchar("job_status", { length: 255 }),
+  jobCategory: varchar("job_category", { length: 255 }),
+  jobState: varchar("job_state", { length: 50 }),
+  dueDate: timestamp("due_date", { withTimezone: true }),
+  lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => [
+  index("xpm_jobs_practice_id_idx").on(t.practiceId),
+  index("xpm_jobs_client_id_idx").on(t.clientId),
+  uniqueIndex("xpm_jobs_practice_job_idx").on(t.practiceId, t.xeroJobId),
 ]);
 
 // ============================================================
@@ -518,6 +544,11 @@ export const xeroConnectionsRelations = relations(xeroConnections, ({ one }) => 
   practice: one(practices, { fields: [xeroConnections.practiceId], references: [practices.id] }),
 }));
 
+export const xpmJobsRelations = relations(xpmJobs, ({ one }) => ({
+  practice: one(practices, { fields: [xpmJobs.practiceId], references: [practices.id] }),
+  client: one(clients, { fields: [xpmJobs.clientId], references: [clients.id] }),
+}));
+
 export const usersRelations = relations(users, ({ one }) => ({
   practice: one(practices, { fields: [users.practiceId], references: [practices.id] }),
 }));
@@ -528,6 +559,7 @@ export const clientsRelations = relations(clients, ({ one, many }) => ({
   enrollments: many(chaseEnrollments),
   consentRecords: many(consentRecords),
   magicLinks: many(magicLinks),
+  xpmJobs: many(xpmJobs),
 }));
 
 export const campaignsRelations = relations(chaseCampaigns, ({ one, many }) => ({

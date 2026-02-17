@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { orgProcedure, router } from "../init";
-import { clients, auditLog, xeroConnections } from "@/server/db/schema";
+import { clients, auditLog, xeroConnections, xpmJobs } from "@/server/db/schema";
 import { eq, and } from "drizzle-orm";
 import { syncContacts } from "@/lib/xero-sync";
 
@@ -99,4 +99,26 @@ export const clientsRouter = router({
       lastSyncStats: lastSync?.changes ?? null,
     };
   }),
+
+  xpmJobs: orgProcedure
+    .input(z.object({ clientId: z.string().uuid() }))
+    .query(async ({ ctx, input }) => {
+      // Verify client belongs to practice
+      const client = await ctx.db.query.clients.findFirst({
+        where: and(
+          eq(clients.id, input.clientId),
+          eq(clients.practiceId, ctx.practiceId),
+        ),
+      });
+
+      if (!client) return [];
+
+      return ctx.db.query.xpmJobs.findMany({
+        where: and(
+          eq(xpmJobs.clientId, input.clientId),
+          eq(xpmJobs.practiceId, ctx.practiceId),
+        ),
+        orderBy: (j, { desc }) => [desc(j.updatedAt)],
+      });
+    }),
 });
