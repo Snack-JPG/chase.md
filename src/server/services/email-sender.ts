@@ -2,7 +2,7 @@
  * Email Sender — Resend integration for chase emails
  */
 
-import { resend } from "@/lib/resend";
+import { getResend } from "@/lib/resend";
 import { db } from "@/server/db";
 import { chaseMessages } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
@@ -19,7 +19,7 @@ interface SendChaseEmailParams {
 
 export async function sendChaseEmail(params: SendChaseEmailParams) {
   try {
-    const result = await resend.emails.send({
+    const result = await getResend().emails.send({
       from: params.from,
       to: params.to,
       subject: params.subject,

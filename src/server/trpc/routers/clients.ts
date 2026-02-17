@@ -6,7 +6,7 @@ import { eq, and } from "drizzle-orm";
 export const clientsRouter = router({
   list: orgProcedure.query(async ({ ctx }) => {
     return ctx.db.query.clients.findMany({
-      where: eq(clients.practiceId, ctx.orgId),
+      where: eq(clients.practiceId, ctx.practiceId),
       orderBy: (clients, { asc }) => [asc(clients.lastName)],
     });
   }),
@@ -17,7 +17,7 @@ export const clientsRouter = router({
       return ctx.db.query.clients.findFirst({
         where: and(
           eq(clients.id, input.id),
-          eq(clients.practiceId, ctx.orgId),
+          eq(clients.practiceId, ctx.practiceId),
         ),
         with: {
           documents: true,
@@ -42,7 +42,7 @@ export const clientsRouter = router({
     .mutation(async ({ ctx, input }) => {
       const [client] = await ctx.db.insert(clients).values({
         ...input,
-        practiceId: ctx.orgId,
+        practiceId: ctx.practiceId,
       }).returning();
       return client;
     }),

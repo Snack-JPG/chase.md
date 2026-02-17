@@ -6,7 +6,7 @@ import { eq } from "drizzle-orm";
 export const campaignsRouter = router({
   list: orgProcedure.query(async ({ ctx }) => {
     return ctx.db.query.chaseCampaigns.findMany({
-      where: eq(chaseCampaigns.practiceId, ctx.orgId),
+      where: eq(chaseCampaigns.practiceId, ctx.practiceId),
       orderBy: (c, { desc }) => [desc(c.createdAt)],
     });
   }),
@@ -36,11 +36,10 @@ export const campaignsRouter = router({
       documentTemplateIds: z.array(z.string().uuid()).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      // TODO: resolve createdBy from clerk userId → users table
       const [campaign] = await ctx.db.insert(chaseCampaigns).values({
         ...input,
-        practiceId: ctx.orgId,
-        createdBy: ctx.userId, // temporary — should be internal user ID
+        practiceId: ctx.practiceId,
+        createdBy: ctx.internalUserId,
         deadlineDate: new Date(input.deadlineDate),
       }).returning();
       return campaign;

@@ -10,7 +10,7 @@ export const documentsRouter = router({
       return ctx.db.query.clientDocuments.findMany({
         where: and(
           eq(clientDocuments.clientId, input.clientId),
-          eq(clientDocuments.practiceId, ctx.orgId),
+          eq(clientDocuments.practiceId, ctx.practiceId),
         ),
         with: { template: true },
         orderBy: (d, { desc }) => [desc(d.createdAt)],
@@ -23,7 +23,7 @@ export const documentsRouter = router({
       return ctx.db.query.clientDocuments.findMany({
         where: and(
           eq(clientDocuments.campaignId, input.campaignId),
-          eq(clientDocuments.practiceId, ctx.orgId),
+          eq(clientDocuments.practiceId, ctx.practiceId),
         ),
         with: { client: true, template: true },
         orderBy: (d, { desc }) => [desc(d.createdAt)],
