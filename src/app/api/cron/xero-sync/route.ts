@@ -41,7 +41,7 @@ export async function POST(req: Request) {
 
     // XPM job sync (only for practices with xpmEnabled=true)
     let xpmResults: Record<string, unknown> = {};
-    let xpmEnrollResults: Record<string, unknown> = {};
+    const xpmEnrollResults: Record<string, unknown> = {};
     try {
       xpmResults = await syncAllXpmJobs();
 

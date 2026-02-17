@@ -1,4 +1,5 @@
 import { XeroClient } from "xero-node";
+import crypto from "crypto";
 
 const SCOPES = "openid profile email accounting.contacts.read accounting.settings.read files offline_access";
 
@@ -17,6 +18,34 @@ export function getXeroClient(): XeroClient {
 }
 
 export { SCOPES };
+
+/**
+ * Verify a Xero webhook payload signature.
+ */
+export function verifyWebhookSignature(
+  payload: string,
+  signature: string,
+  webhookKey: string,
+): boolean {
+  const hash = crypto
+    .createHmac("sha256", webhookKey)
+    .update(payload)
+    .digest("base64");
+  return hash === signature;
+}
+
+/**
+ * Xero webhook subscriptions cannot be created via API.
+ * They must be registered manually in the Xero Developer Dashboard:
+ *
+ * 1. Go to https://developer.xero.com/app/manage
+ * 2. Select your app → Webhooks
+ * 3. Add webhook with your endpoint URL: https://app.chase.md/api/webhooks/xero
+ * 4. Select events: Contacts (Create, Update)
+ * 5. Save — Xero will provide a webhook key
+ * 6. Paste the webhook key in chase.md Settings → Xero → Webhook Key
+ * 7. Xero sends an Intent to Receive validation request to verify your endpoint
+ */
 
 /**
  * Refresh an access token using a single-use refresh token.

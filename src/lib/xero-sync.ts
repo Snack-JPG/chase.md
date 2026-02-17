@@ -215,6 +215,82 @@ export async function syncContacts(practiceId: string): Promise<SyncStats> {
 }
 
 // ============================================================
+// Single contact sync (for webhooks)
+// ============================================================
+
+export async function syncSingleContact(practiceId: string, xeroContactId: string): Promise<void> {
+  const connection = await db.query.xeroConnections.findFirst({
+    where: and(
+      eq(xeroConnections.practiceId, practiceId),
+      eq(xeroConnections.status, "active"),
+    ),
+  });
+
+  if (!connection) {
+    throw new Error("No active Xero connection for this practice");
+  }
+
+  const accessToken = await getValidAccessToken(connection);
+
+  const response = await fetch(
+    `https://api.xero.com/api.xro/2.0/Contacts/${xeroContactId}`,
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "xero-tenant-id": connection.xeroTenantId,
+        Accept: "application/json",
+      },
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error(`Xero API error fetching contact: ${response.status}`);
+  }
+
+  const data = await response.json();
+  const xc: XeroContact = data.Contacts?.[0];
+  if (!xc) return;
+
+  const name = xc.Name || "";
+  const firstName = xc.FirstName || name.split(" ")[0] || "Unknown";
+  const lastName = xc.LastName || name.split(" ").slice(1).join(" ") || "";
+  const email = xc.EmailAddress || undefined;
+  const phone = extractPhone(xc.Phones, "DEFAULT");
+
+  // Check if client already exists
+  const existing = await db.query.clients.findFirst({
+    where: and(
+      eq(clients.practiceId, practiceId),
+      eq(clients.xeroContactId, xeroContactId),
+    ),
+  });
+
+  if (existing) {
+    await db
+      .update(clients)
+      .set({
+        ...(email && !existing.email ? { email } : {}),
+        ...(phone && !existing.phone ? { phone } : {}),
+        companyName: name || existing.companyName,
+        updatedAt: new Date(),
+      })
+      .where(eq(clients.id, existing.id));
+  } else {
+    await db.insert(clients).values({
+      practiceId,
+      firstName,
+      lastName: lastName || firstName,
+      companyName: name,
+      email,
+      phone,
+      clientType: "limited_company",
+      xeroContactId,
+      chaseEnabled: true,
+    });
+  }
+}
+
+// ============================================================
 // Sync all practices (for cron)
 // ============================================================
 

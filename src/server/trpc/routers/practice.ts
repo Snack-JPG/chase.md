@@ -58,6 +58,38 @@ export const practiceRouter = router({
       connected: true as const,
       tenantName: connection.xeroTenantName,
       connectedAt: connection.connectedAt,
+      webhookKeySet: !!connection.xeroWebhookKey,
     };
   }),
+
+  saveWebhookKey: orgProcedure
+    .input(z.object({ webhookKey: z.string().min(1) }))
+    .mutation(async ({ ctx, input }) => {
+      const [updated] = await ctx.db
+        .update(xeroConnections)
+        .set({
+          xeroWebhookKey: input.webhookKey,
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(xeroConnections.practiceId, ctx.practiceId),
+            eq(xeroConnections.status, "active"),
+          ),
+        )
+        .returning();
+
+      if (!updated) throw new Error("No active Xero connection found");
+
+      await ctx.db.insert(auditLog).values({
+        practiceId: ctx.practiceId,
+        action: "update",
+        entityType: "xero_connection",
+        entityId: updated.id,
+        userId: ctx.internalUserId,
+        changes: { webhookKeySet: true },
+      });
+
+      return { success: true };
+    }),
 });

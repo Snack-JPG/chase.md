@@ -494,6 +494,8 @@ export const xeroConnections = pgTable("xero_connections", {
 
   xeroUploadFolderId: varchar("xero_upload_folder_id", { length: 255 }),
 
+  xeroWebhookKey: text("xero_webhook_key"),
+
   xpmEnabled: boolean("xpm_enabled").default(false),
   xpmStatusMappings: jsonb("xpm_status_mappings").default({}),
 

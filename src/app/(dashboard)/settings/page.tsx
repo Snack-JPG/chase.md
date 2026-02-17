@@ -3,6 +3,87 @@
 import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc/client";
 
+function XeroWebhookConfig() {
+  const xeroStatus = trpc.practice.xeroStatus.useQuery();
+  const saveWebhookKey = trpc.practice.saveWebhookKey.useMutation({
+    onSuccess: () => {
+      xeroStatus.refetch();
+      setKeySaved(true);
+      setTimeout(() => setKeySaved(false), 2000);
+    },
+  });
+  const [webhookKey, setWebhookKey] = useState("");
+  const [keySaved, setKeySaved] = useState(false);
+
+  if (!xeroStatus.data?.connected) return null;
+
+  const webhookUrl = typeof window !== "undefined"
+    ? `${window.location.origin}/api/webhooks/xero`
+    : "";
+
+  return (
+    <div className="mt-3 p-4 bg-white border rounded-lg space-y-3">
+      <h3 className="text-sm font-semibold text-gray-800">Xero Webhooks</h3>
+      <p className="text-xs text-gray-500">
+        Enable real-time contact sync. Register a webhook in your{" "}
+        <a href="https://developer.xero.com/app/manage" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
+          Xero Developer Dashboard
+        </a>{" "}
+        with the URL below, then paste the webhook key here.
+      </p>
+
+      <div>
+        <label className="block text-xs font-medium text-gray-600 mb-1">Webhook URL</label>
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            readOnly
+            value={webhookUrl}
+            className="flex-1 px-3 py-1.5 border rounded-lg text-xs bg-gray-50 text-gray-700"
+            onClick={(e) => (e.target as HTMLInputElement).select()}
+          />
+          <button
+            onClick={() => navigator.clipboard.writeText(webhookUrl)}
+            className="text-xs px-2 py-1.5 border rounded-lg hover:bg-gray-50"
+          >
+            Copy
+          </button>
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-xs font-medium text-gray-600 mb-1">Webhook Key</label>
+        <div className="flex items-center gap-2">
+          <input
+            type="password"
+            placeholder={xeroStatus.data.webhookKeySet ? "••••••••  (key saved)" : "Paste webhook key from Xero"}
+            value={webhookKey}
+            onChange={(e) => setWebhookKey(e.target.value)}
+            className="flex-1 px-3 py-1.5 border rounded-lg text-xs"
+          />
+          <button
+            onClick={() => {
+              if (webhookKey.trim()) saveWebhookKey.mutate({ webhookKey: webhookKey.trim() });
+            }}
+            disabled={!webhookKey.trim() || saveWebhookKey.isPending}
+            className="text-xs px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-500 disabled:opacity-50"
+          >
+            {saveWebhookKey.isPending ? "Saving..." : "Save"}
+          </button>
+        </div>
+        {keySaved && <p className="text-xs text-green-600 mt-1">✓ Webhook key saved</p>}
+      </div>
+
+      <div className="flex items-center gap-2">
+        <span className={`w-2 h-2 rounded-full ${xeroStatus.data.webhookKeySet ? "bg-green-500" : "bg-gray-300"}`} />
+        <span className="text-xs text-gray-600">
+          {xeroStatus.data.webhookKeySet ? "Webhook configured — real-time sync active" : "Webhook not configured — using scheduled sync only"}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 function XeroConnectionCard() {
   const xeroStatus = trpc.practice.xeroStatus.useQuery();
   const [disconnecting, setDisconnecting] = useState(false);
@@ -38,26 +119,29 @@ function XeroConnectionCard() {
 
   if (data?.connected) {
     return (
-      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-        <div className="flex items-center gap-3">
-          <span className="text-2xl">📊</span>
-          <div>
-            <p className="font-medium text-sm">Xero</p>
-            <p className="text-xs text-gray-500">
-              Connected to <strong>{data.tenantName}</strong>
-            </p>
+      <div>
+        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">📊</span>
+            <div>
+              <p className="font-medium text-sm">Xero</p>
+              <p className="text-xs text-gray-500">
+                Connected to <strong>{data.tenantName}</strong>
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs px-2.5 py-1 rounded-full bg-green-100 text-green-700">Connected</span>
+            <button
+              onClick={handleDisconnect}
+              disabled={disconnecting}
+              className="text-xs px-3 py-1 rounded-full border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-50"
+            >
+              {disconnecting ? "Disconnecting..." : "Disconnect"}
+            </button>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-xs px-2.5 py-1 rounded-full bg-green-100 text-green-700">Connected</span>
-          <button
-            onClick={handleDisconnect}
-            disabled={disconnecting}
-            className="text-xs px-3 py-1 rounded-full border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-50"
-          >
-            {disconnecting ? "Disconnecting..." : "Disconnect"}
-          </button>
-        </div>
+        <XeroWebhookConfig />
       </div>
     );
   }
