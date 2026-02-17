@@ -1,7 +1,8 @@
 import { z } from "zod";
 import { orgProcedure, router } from "../init";
-import { clients, auditLog } from "@/server/db/schema";
+import { clients, auditLog, xeroConnections } from "@/server/db/schema";
 import { eq, and } from "drizzle-orm";
+import { syncContacts } from "@/lib/xero-sync";
 
 export const clientsRouter = router({
   list: orgProcedure.query(async ({ ctx }) => {
@@ -56,4 +57,46 @@ export const clientsRouter = router({
 
       return client;
     }),
+
+  syncFromXero: orgProcedure.mutation(async ({ ctx }) => {
+    const stats = await syncContacts(ctx.practiceId);
+
+    await ctx.db.insert(auditLog).values({
+      practiceId: ctx.practiceId,
+      action: "bulk_action",
+      entityType: "client",
+      userId: ctx.internalUserId,
+      changes: { type: "xero_sync", ...stats },
+    });
+
+    return stats;
+  }),
+
+  lastSyncStatus: orgProcedure.query(async ({ ctx }) => {
+    const connection = await ctx.db.query.xeroConnections.findFirst({
+      where: and(
+        eq(xeroConnections.practiceId, ctx.practiceId),
+        eq(xeroConnections.status, "active"),
+      ),
+    });
+
+    if (!connection) return null;
+
+    // Get last sync audit log entry
+    const lastSync = await ctx.db.query.auditLog.findFirst({
+      where: and(
+        eq(auditLog.practiceId, ctx.practiceId),
+        eq(auditLog.entityType, "client"),
+        eq(auditLog.action, "bulk_action"),
+      ),
+      orderBy: (log, { desc }) => [desc(log.createdAt)],
+    });
+
+    return {
+      connected: true,
+      orgName: connection.xeroTenantName,
+      lastSyncAt: lastSync?.createdAt ?? null,
+      lastSyncStats: lastSync?.changes ?? null,
+    };
+  }),
 });

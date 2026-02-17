@@ -154,6 +154,8 @@ export const clients = pgTable("clients", {
   notes: text("notes"),
   tags: jsonb("tags").default([]),
 
+  xeroContactId: varchar("xero_contact_id", { length: 255 }),
+
   lastChasedAt: timestamp("last_chased_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
@@ -162,6 +164,7 @@ export const clients = pgTable("clients", {
   index("clients_practice_id_idx").on(t.practiceId),
   index("clients_email_idx").on(t.email),
   index("clients_external_ref_idx").on(t.practiceId, t.externalRef),
+  index("clients_xero_contact_id_idx").on(t.practiceId, t.xeroContactId),
 ]);
 
 export const documentTemplates = pgTable("document_templates", {

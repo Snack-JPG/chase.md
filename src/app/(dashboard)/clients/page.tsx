@@ -21,15 +21,41 @@ function ClientTypeLabel({ type }: { type: string }) {
   );
 }
 
+function XeroBadge() {
+  return (
+    <span className="text-xs px-1.5 py-0.5 rounded bg-teal-100 text-teal-700 font-medium ml-1.5">
+      Xero
+    </span>
+  );
+}
+
 export default function ClientsPage() {
   const [search, setSearch] = useState("");
   const [showAdd, setShowAdd] = useState(false);
+  const [syncToast, setSyncToast] = useState<string | null>(null);
 
   const clientsQuery = trpc.clients.list.useQuery();
+  const syncStatus = trpc.clients.lastSyncStatus.useQuery();
   const createClient = trpc.clients.create.useMutation({
     onSuccess: () => {
       clientsQuery.refetch();
       setShowAdd(false);
+    },
+  });
+  const syncFromXero = trpc.clients.syncFromXero.useMutation({
+    onSuccess: (stats) => {
+      clientsQuery.refetch();
+      syncStatus.refetch();
+      const parts: string[] = [];
+      if (stats.created > 0) parts.push(`Imported ${stats.created}`);
+      if (stats.updated > 0) parts.push(`updated ${stats.updated}`);
+      if (stats.errors > 0) parts.push(`${stats.errors} errors`);
+      setSyncToast(parts.length > 0 ? parts.join(", ") : "No changes");
+      setTimeout(() => setSyncToast(null), 5000);
+    },
+    onError: (err) => {
+      setSyncToast(`Sync failed: ${err.message}`);
+      setTimeout(() => setSyncToast(null), 5000);
     },
   });
 
@@ -42,14 +68,42 @@ export default function ClientsPage() {
 
   return (
     <div className="space-y-6">
+      {/* Toast */}
+      {syncToast && (
+        <div className="fixed top-4 right-4 z-50 bg-white border border-gray-200 shadow-lg rounded-lg px-4 py-3 text-sm flex items-center gap-2">
+          <span className="text-teal-600">⟳</span> {syncToast}
+          <button onClick={() => setSyncToast(null)} className="text-gray-400 hover:text-gray-600 ml-2">✕</button>
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Clients</h1>
           <p className="text-sm text-gray-500 mt-1">
             {clientsQuery.isLoading ? "Loading..." : `${clients.length} total clients`}
+            {syncStatus.data?.lastSyncAt && (
+              <span className="ml-2 text-gray-400">
+                · Last synced {formatDistanceToNow(new Date(syncStatus.data.lastSyncAt), { addSuffix: true })}
+              </span>
+            )}
           </p>
         </div>
         <div className="flex gap-3">
+          {syncStatus.data?.connected && (
+            <button
+              onClick={() => syncFromXero.mutate()}
+              disabled={syncFromXero.isPending}
+              className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-500 text-sm font-medium disabled:opacity-50 flex items-center gap-2"
+            >
+              {syncFromXero.isPending ? (
+                <>
+                  <span className="animate-spin">⟳</span> Syncing…
+                </>
+              ) : (
+                <>⟳ Sync from Xero</>
+              )}
+            </button>
+          )}
           <button className="px-4 py-2 bg-white border text-gray-700 rounded-lg hover:bg-gray-50 text-sm font-medium">
             Import CSV
           </button>
@@ -122,10 +176,15 @@ export default function ClientsPage() {
               {filtered.map((client) => (
                 <tr key={client.id} className="hover:bg-gray-50 cursor-pointer">
                   <td className="px-4 py-3">
-                    <p className="font-medium">{client.firstName} {client.lastName}</p>
-                    {client.companyName && (
-                      <p className="text-xs text-gray-500">{client.companyName}</p>
-                    )}
+                    <div className="flex items-center">
+                      <div>
+                        <p className="font-medium">{client.firstName} {client.lastName}</p>
+                        {client.companyName && (
+                          <p className="text-xs text-gray-500">{client.companyName}</p>
+                        )}
+                      </div>
+                      {client.xeroContactId && <XeroBadge />}
+                    </div>
                   </td>
                   <td className="px-4 py-3">
                     <ClientTypeLabel type={client.clientType} />
