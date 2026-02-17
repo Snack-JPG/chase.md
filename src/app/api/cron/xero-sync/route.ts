@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { Receiver } from "@upstash/qstash";
 import { syncAllPractices } from "@/lib/xero-sync";
+import { pushPendingDocuments } from "@/lib/xero-files";
 
 function getReceiver() {
   return new Receiver({
@@ -30,9 +31,13 @@ export async function POST(req: Request) {
   try {
     const results = await syncAllPractices();
 
+    // Also push any pending documents to Xero (fallback for failed real-time pushes)
+    const pushResults = await pushPendingDocuments();
+
     return NextResponse.json({
       success: true,
       results,
+      xeroPush: pushResults,
       timestamp: new Date().toISOString(),
     });
   } catch (error) {

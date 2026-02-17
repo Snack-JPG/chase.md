@@ -5,6 +5,7 @@ import { eq, and, lt, sql } from "drizzle-orm";
 import { uploadDocument } from "@/lib/r2";
 import { isAfter } from "date-fns";
 import { classifyDocument } from "@/server/services/document-classifier";
+import { pushDocumentToXero } from "@/lib/xero-files";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ALLOWED_TYPES = new Set([
@@ -116,6 +117,11 @@ export async function POST(req: Request) {
     // Trigger AI classification in the background (non-blocking)
     classifyDocument(doc.id).catch((err) =>
       console.error("AI classification failed for doc", doc.id, err)
+    );
+
+    // Push to Xero in the background (non-blocking)
+    pushDocumentToXero(doc.id).catch((err) =>
+      console.error("Xero push failed for doc", doc.id, err)
     );
 
     // Audit log

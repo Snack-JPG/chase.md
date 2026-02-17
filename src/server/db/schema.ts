@@ -56,6 +56,9 @@ export const classificationConfidenceEnum = pgEnum("classification_confidence", 
 export const escalationLevelEnum = pgEnum("escalation_level", [
   "gentle", "reminder", "firm", "urgent", "escalate",
 ]);
+export const xeroPushStatusEnum = pgEnum("xero_push_status", [
+  "pending", "pushed", "failed", "skipped",
+]);
 
 // ============================================================
 // TABLES
@@ -299,6 +302,11 @@ export const clientDocuments = pgTable("client_documents", {
   uploadedVia: varchar("uploaded_via", { length: 50 }),
   uploadedByIp: varchar("uploaded_by_ip", { length: 45 }),
 
+  xeroFileId: varchar("xero_file_id", { length: 255 }),
+  xeroPushStatus: xeroPushStatusEnum("xero_push_status").default("pending"),
+  xeroPushError: text("xero_push_error"),
+  xeroPushedAt: timestamp("xero_pushed_at", { withTimezone: true }),
+
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 }, (t) => [
@@ -306,6 +314,7 @@ export const clientDocuments = pgTable("client_documents", {
   index("client_docs_client_id_idx").on(t.clientId),
   index("client_docs_campaign_id_idx").on(t.campaignId),
   index("client_docs_status_idx").on(t.status),
+  index("client_docs_xero_push_status_idx").on(t.xeroPushStatus),
 ]);
 
 export const chaseMessages = pgTable("chase_messages", {
@@ -479,6 +488,8 @@ export const xeroConnections = pgTable("xero_connections", {
 
   scopes: text("scopes"),
   status: xeroConnectionStatusEnum("status").default("active").notNull(),
+
+  xeroUploadFolderId: varchar("xero_upload_folder_id", { length: 255 }),
 
   connectedAt: timestamp("connected_at", { withTimezone: true }).defaultNow().notNull(),
   disconnectedAt: timestamp("disconnected_at", { withTimezone: true }),
