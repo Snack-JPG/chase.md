@@ -15,6 +15,7 @@ import {
   Zap,
   ArrowRight,
   Check,
+  CheckCircle,
   ChevronDown,
   Sparkles,
 } from "lucide-react";
@@ -66,6 +67,7 @@ function Section({
 // --- FAQ Item ---
 function FAQItem({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = useState(false);
+  const [waitlistSubmitted, setWaitlistSubmitted] = useState(false);
   return (
     <div className="border-b border-white/10">
       <button
@@ -622,13 +624,39 @@ export default function MarketingPage() {
           <p className="text-zinc-400 text-lg mb-10 max-w-xl mx-auto">
             Join the waitlist for early access. Be the first to stop chasing and start collecting.
           </p>
-          <a
-            href="#waitlist"
-            className="group inline-flex items-center gap-2 px-10 py-5 bg-emerald-500 text-black font-semibold rounded-xl hover:bg-emerald-400 transition-all duration-200 text-lg"
-          >
-            Join the Waitlist
-            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-          </a>
+          {waitlistSubmitted ? (
+            <div className="inline-flex items-center gap-2 px-8 py-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-emerald-400 font-medium text-lg">
+              <CheckCircle className="w-5 h-5" /> You&apos;re on the list!
+            </div>
+          ) : (
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                const form = e.target as HTMLFormElement;
+                const email = (form.elements.namedItem("email") as HTMLInputElement).value;
+                if (email) {
+                  console.log("Waitlist signup:", email);
+                  setWaitlistSubmitted(true);
+                }
+              }}
+              className="flex flex-col sm:flex-row items-center gap-3 max-w-md mx-auto"
+            >
+              <input
+                type="email"
+                name="email"
+                required
+                placeholder="you@yourpractice.co.uk"
+                className="w-full sm:flex-1 px-5 py-4 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-zinc-500 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all"
+              />
+              <button
+                type="submit"
+                className="group w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 bg-emerald-500 text-black font-semibold rounded-xl hover:bg-emerald-400 transition-all duration-200 text-base whitespace-nowrap"
+              >
+                Join Waitlist
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </button>
+            </form>
+          )}
         </motion.div>
       </section>
 
