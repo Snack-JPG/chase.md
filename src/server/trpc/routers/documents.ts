@@ -1,10 +1,41 @@
 import { z } from "zod";
 import { orgProcedure, router } from "../init";
-import { clientDocuments } from "@/server/db/schema";
-import { eq, and } from "drizzle-orm";
+import { clientDocuments, documentTemplates } from "@/server/db/schema";
+import { eq, and, or } from "drizzle-orm";
 import { pushDocumentToXero } from "@/lib/xero-files";
 
 export const documentsRouter = router({
+  listTemplates: orgProcedure
+    .input(z.object({
+      taxObligation: z.string().optional(),
+      clientType: z.string().optional(),
+    }).optional())
+    .query(async ({ ctx, input }) => {
+      const rows = await ctx.db.query.documentTemplates.findMany({
+        where: or(
+          eq(documentTemplates.practiceId, ctx.practiceId),
+          eq(documentTemplates.isSystem, true),
+        ),
+        orderBy: (t, { asc }) => [asc(t.sortOrder), asc(t.name)],
+      });
+
+      return rows.filter((t) => {
+        if (input?.taxObligation) {
+          const obligations = t.applicableTaxObligations as string[] | null;
+          if (obligations && obligations.length > 0 && !obligations.includes(input.taxObligation)) {
+            return false;
+          }
+        }
+        if (input?.clientType) {
+          const types = t.applicableClientTypes as string[] | null;
+          if (types && types.length > 0 && !types.includes(input.clientType)) {
+            return false;
+          }
+        }
+        return true;
+      });
+    }),
+
   listByClient: orgProcedure
     .input(z.object({ clientId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {

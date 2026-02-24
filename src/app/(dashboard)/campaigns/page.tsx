@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { trpc } from "@/lib/trpc/client";
 import { formatDistanceToNow } from "date-fns";
 import {
@@ -8,7 +8,6 @@ import {
   Megaphone,
 } from "lucide-react";
 import { getCampaignStatusStyle, formatObligation } from "@/lib/constants";
-import { CreateCampaignModal } from "@/components/create-campaign-modal";
 
 function StatusBadge({ status }: { status: string }) {
   return (
@@ -19,18 +18,12 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 export default function CampaignsPage() {
-  const [showCreate, setShowCreate] = useState(false);
+  const router = useRouter();
 
   const campaignsQuery = trpc.campaigns.list.useInfiniteQuery(
     { limit: 50 },
     { getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined },
   );
-  const createCampaign = trpc.campaigns.create.useMutation({
-    onSuccess: () => {
-      campaignsQuery.refetch();
-      setShowCreate(false);
-    },
-  });
 
   const campaigns = campaignsQuery.data?.pages.flatMap((p) => p.items) ?? [];
 
@@ -45,7 +38,7 @@ export default function CampaignsPage() {
           </p>
         </div>
         <button
-          onClick={() => setShowCreate(true)}
+          onClick={() => router.push("/dashboard/campaigns/new")}
           className="inline-flex items-center gap-2 px-4 py-2.5 bg-accent text-white rounded-[var(--radius-md)] hover:bg-accent-hover text-[13px] font-medium transition-colors shadow-sm"
         >
           <Plus className="w-4 h-4" />
@@ -79,7 +72,7 @@ export default function CampaignsPage() {
             For example: &quot;2024/25 Self Assessment &mdash; chase all sole traders for P60s, bank statements, and expenses.&quot;
           </p>
           <button
-            onClick={() => setShowCreate(true)}
+            onClick={() => router.push("/dashboard/campaigns/new")}
             className="mt-4 inline-flex items-center gap-2 px-4 py-2.5 bg-accent text-white rounded-[var(--radius-md)] text-[13px] font-medium hover:bg-accent-hover transition-colors shadow-sm"
           >
             <Plus className="w-4 h-4" />
@@ -105,7 +98,20 @@ export default function CampaignsPage() {
                   ? Math.round(((c.completedEnrollments ?? 0) / c.totalEnrollments) * 100)
                   : 0;
                 return (
-                  <tr key={c.id} className="hover:bg-surface-inset/50 cursor-pointer transition-colors">
+                  <tr
+                    key={c.id}
+                    className="hover:bg-surface-inset/50 cursor-pointer transition-colors"
+                    onClick={() => router.push(`/dashboard/campaigns/${c.id}`)}
+                    tabIndex={0}
+                    role="link"
+                    aria-label={`View campaign ${c.name}`}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        router.push(`/dashboard/campaigns/${c.id}`);
+                      }
+                    }}
+                  >
                     <td className="px-4 py-3.5 font-medium text-text-primary">{c.name}</td>
                     <td className="px-4 py-3.5 text-text-secondary font-mono text-[12px]">{c.taxYear}</td>
                     <td className="px-4 py-3.5 text-text-secondary">{formatObligation(c.taxObligation)}</td>
@@ -145,16 +151,6 @@ export default function CampaignsPage() {
             {campaignsQuery.isFetchingNextPage ? "Loading..." : "Load more campaigns"}
           </button>
         </div>
-      )}
-
-      {/* Create campaign modal */}
-      {showCreate && (
-        <CreateCampaignModal
-          onClose={() => setShowCreate(false)}
-          onSubmit={(data) => createCampaign.mutate(data)}
-          isLoading={createCampaign.isPending}
-          error={createCampaign.error?.message}
-        />
       )}
     </div>
   );

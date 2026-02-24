@@ -56,6 +56,24 @@ export const MESSAGE_STATUS_STYLES: Record<string, string> = {
   opted_out: "bg-orange-50 text-orange-700 ring-orange-200",
 };
 
+// ─── Enrollment Status ──────────────────────────────────────────────
+
+export const ENROLLMENT_STATUS_STYLES: Record<string, string> = {
+  pending: "bg-stone-100 text-stone-600 ring-stone-200",
+  active: "bg-success-light text-success ring-green-200",
+  completed: "bg-info-light text-info ring-blue-200",
+  opted_out: "bg-danger-light text-danger ring-red-200",
+  paused: "bg-warning-light text-warning ring-amber-200",
+};
+
+// ─── Channel Options ──────────────────────────────────────────────
+
+export const CHANNEL_OPTIONS = [
+  { value: "email", label: "Email" },
+  { value: "whatsapp", label: "WhatsApp" },
+  { value: "sms", label: "SMS" },
+] as const;
+
 // ─── Tax Obligations ──────────────────────────────────────────────
 
 export const TAX_OBLIGATIONS = [
@@ -83,6 +101,10 @@ export function getEscalationStyle(level: string): string {
 
 export function getClientTypeConfig(type: string): { label: string; color: string } {
   return CLIENT_TYPE_STYLES[type] ?? { label: type, color: DEFAULT_BADGE };
+}
+
+export function getEnrollmentStatusStyle(status: string): string {
+  return ENROLLMENT_STATUS_STYLES[status] ?? DEFAULT_BADGE;
 }
 
 export function getDocumentStatusStyle(status: string): string {
