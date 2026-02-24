@@ -49,6 +49,11 @@ export const whatsappTemplateStatusEnum = pgEnum("wa_template_status", [
 export const auditActionEnum = pgEnum("audit_action", [
   "create", "update", "delete", "send", "upload", "classify",
   "login", "consent_change", "export", "bulk_action",
+  "data_export", "data_deletion", "consent_grant", "consent_revoke",
+]);
+
+export const consentSourceEnum = pgEnum("consent_source", [
+  "portal", "import", "manual", "api", "whatsapp_inbound", "sms_inbound",
 ]);
 export const classificationConfidenceEnum = pgEnum("classification_confidence", [
   "high", "medium", "low", "unknown",
@@ -156,9 +161,18 @@ export const clients = pgTable("clients", {
   taxObligations: jsonb("tax_obligations").default([]),
   accountingYearEnd: varchar("accounting_year_end", { length: 5 }),
 
+  emailConsent: boolean("email_consent").default(true),
+  emailConsentAt: timestamp("email_consent_at", { withTimezone: true }),
+  smsConsent: boolean("sms_consent").default(false),
+  smsConsentAt: timestamp("sms_consent_at", { withTimezone: true }),
   whatsappOptIn: boolean("whatsapp_opt_in").default(false),
   whatsappOptInAt: timestamp("whatsapp_opt_in_at", { withTimezone: true }),
   whatsappLastInboundAt: timestamp("whatsapp_last_inbound_at", { withTimezone: true }),
+  consentSource: consentSourceEnum("consent_source"),
+  marketingConsent: boolean("marketing_consent").default(false),
+  marketingConsentAt: timestamp("marketing_consent_at", { withTimezone: true }),
+  dataRetentionExpiry: timestamp("data_retention_expiry", { withTimezone: true }),
+  consentRecordedAt: timestamp("consent_recorded_at", { withTimezone: true }),
 
   chaseEnabled: boolean("chase_enabled").default(true),
   notes: text("notes"),
