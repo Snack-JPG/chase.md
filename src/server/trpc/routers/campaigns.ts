@@ -1,15 +1,35 @@
 import { z } from "zod";
 import { orgProcedure, router } from "../init";
 import { chaseCampaigns, auditLog } from "@/server/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, gt } from "drizzle-orm";
 
 export const campaignsRouter = router({
-  list: orgProcedure.query(async ({ ctx }) => {
-    return ctx.db.query.chaseCampaigns.findMany({
-      where: eq(chaseCampaigns.practiceId, ctx.practiceId),
-      orderBy: (c, { desc }) => [desc(c.createdAt)],
-    });
-  }),
+  list: orgProcedure
+    .input(z.object({
+      cursor: z.string().uuid().optional(),
+      limit: z.number().min(1).max(100).default(50),
+    }).optional())
+    .query(async ({ ctx, input }) => {
+      const limit = input?.limit ?? 50;
+      const rows = await ctx.db.query.chaseCampaigns.findMany({
+        where: input?.cursor
+          ? and(
+              eq(chaseCampaigns.practiceId, ctx.practiceId),
+              gt(chaseCampaigns.id, input.cursor),
+            )
+          : eq(chaseCampaigns.practiceId, ctx.practiceId),
+        orderBy: (c, { desc }) => [desc(c.createdAt)],
+        limit: limit + 1,
+      });
+
+      let nextCursor: string | null = null;
+      if (rows.length > limit) {
+        const next = rows.pop()!;
+        nextCursor = next.id;
+      }
+
+      return { items: rows, nextCursor };
+    }),
 
   getById: orgProcedure
     .input(z.object({ id: z.string().uuid() }))

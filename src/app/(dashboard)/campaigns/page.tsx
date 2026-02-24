@@ -3,22 +3,28 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc/client";
 import { formatDistanceToNow } from "date-fns";
+import {
+  Plus,
+  Megaphone,
+} from "lucide-react";
+import { getCampaignStatusStyle, formatObligation } from "@/lib/constants";
+import { CreateCampaignModal } from "@/components/create-campaign-modal";
 
-const TAX_OBLIGATIONS = [
-  { value: "self_assessment", label: "Self Assessment" },
-  { value: "corporation_tax", label: "Corporation Tax" },
-  { value: "vat", label: "VAT Returns" },
-  { value: "mtd_itsa", label: "MTD ITSA" },
-  { value: "annual_accounts", label: "Annual Accounts" },
-  { value: "confirmation_statement", label: "Confirmation Statement" },
-] as const;
-
-type TaxObligation = (typeof TAX_OBLIGATIONS)[number]["value"];
+function StatusBadge({ status }: { status: string }) {
+  return (
+    <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ring-1 ring-inset capitalize ${getCampaignStatusStyle(status)}`} role="status">
+      {status}
+    </span>
+  );
+}
 
 export default function CampaignsPage() {
   const [showCreate, setShowCreate] = useState(false);
 
-  const campaignsQuery = trpc.campaigns.list.useQuery();
+  const campaignsQuery = trpc.campaigns.list.useInfiniteQuery(
+    { limit: 50 },
+    { getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined },
+  );
   const createCampaign = trpc.campaigns.create.useMutation({
     onSuccess: () => {
       campaignsQuery.refetch();
@@ -26,91 +32,98 @@ export default function CampaignsPage() {
     },
   });
 
-  const campaigns = campaignsQuery.data ?? [];
+  const campaigns = campaignsQuery.data?.pages.flatMap((p) => p.items) ?? [];
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Campaigns</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Each campaign chases a group of clients for specific documents.
+          <h1 className="text-[22px] font-semibold text-text-primary tracking-tight">Campaigns</h1>
+          <p className="text-[13px] text-text-muted mt-0.5">
+            Chase groups of clients for specific documents.
           </p>
         </div>
         <button
           onClick={() => setShowCreate(true)}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 text-sm font-medium"
+          className="inline-flex items-center gap-2 px-4 py-2.5 bg-accent text-white rounded-[var(--radius-md)] hover:bg-accent-hover text-[13px] font-medium transition-colors shadow-sm"
         >
+          <Plus className="w-4 h-4" />
           New Campaign
         </button>
       </div>
 
       {campaignsQuery.isError && (
-        <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg p-3">
+        <div className="bg-danger-light border border-red-200 text-danger text-[13px] rounded-[var(--radius-md)] px-4 py-3">
           Failed to load campaigns. {campaignsQuery.error?.message}
         </div>
       )}
 
       {/* Campaign list */}
       {campaignsQuery.isLoading ? (
-        <div className="bg-white rounded-xl border p-12 text-center">
-          <p className="text-gray-400">Loading campaigns...</p>
+        <div className="bg-surface-raised rounded-[var(--radius-lg)] border border-border p-6" style={{ boxShadow: "var(--shadow-card)" }}>
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="skeleton h-14 w-full" />
+            ))}
+          </div>
         </div>
       ) : campaigns.length === 0 ? (
-        <div className="bg-white rounded-xl border p-12 text-center">
-          <div className="text-4xl mb-3">📋</div>
-          <p className="text-lg font-medium text-gray-700">No campaigns yet</p>
-          <p className="text-sm text-gray-500 mt-1 max-w-md mx-auto">
+        <div className="bg-surface-raised rounded-[var(--radius-lg)] border border-border p-12 text-center" style={{ boxShadow: "var(--shadow-card)" }}>
+          <div className="w-14 h-14 rounded-full bg-surface-inset flex items-center justify-center mx-auto mb-4">
+            <Megaphone className="w-6 h-6 text-text-muted" />
+          </div>
+          <p className="text-[15px] font-medium text-text-primary">No campaigns yet</p>
+          <p className="text-[13px] text-text-muted mt-1.5 max-w-md mx-auto">
             A campaign lets you chase a group of clients for their documents.
-            For example: &quot;2024/25 Self Assessment — chase all sole traders for P60s, bank statements, and expenses.&quot;
+            For example: &quot;2024/25 Self Assessment &mdash; chase all sole traders for P60s, bank statements, and expenses.&quot;
           </p>
           <button
             onClick={() => setShowCreate(true)}
-            className="mt-4 px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-500 text-sm font-medium"
+            className="mt-4 inline-flex items-center gap-2 px-4 py-2.5 bg-accent text-white rounded-[var(--radius-md)] text-[13px] font-medium hover:bg-accent-hover transition-colors shadow-sm"
           >
+            <Plus className="w-4 h-4" />
             Create Your First Campaign
           </button>
         </div>
       ) : (
-        <div className="bg-white rounded-xl border overflow-hidden">
-          <table className="w-full text-sm">
+        <div className="bg-surface-raised rounded-[var(--radius-lg)] border border-border overflow-hidden" style={{ boxShadow: "var(--shadow-card)" }}>
+          <table className="w-full text-[13px]">
             <thead>
-              <tr className="border-b bg-gray-50">
-                <th className="text-left px-4 py-3 font-medium text-gray-500">Name</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-500">Tax Year</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-500">Obligation</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-500">Progress</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-500">Status</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-500">Created</th>
+              <tr className="border-b border-border bg-surface-inset/50">
+                <th className="text-left px-4 py-3 font-medium text-text-muted text-[12px] uppercase tracking-wider">Name</th>
+                <th className="text-left px-4 py-3 font-medium text-text-muted text-[12px] uppercase tracking-wider">Tax Year</th>
+                <th className="text-left px-4 py-3 font-medium text-text-muted text-[12px] uppercase tracking-wider">Obligation</th>
+                <th className="text-left px-4 py-3 font-medium text-text-muted text-[12px] uppercase tracking-wider">Progress</th>
+                <th className="text-left px-4 py-3 font-medium text-text-muted text-[12px] uppercase tracking-wider">Status</th>
+                <th className="text-left px-4 py-3 font-medium text-text-muted text-[12px] uppercase tracking-wider">Created</th>
               </tr>
             </thead>
-            <tbody className="divide-y">
+            <tbody className="divide-y divide-border">
               {campaigns.map((c) => {
                 const completion = c.totalEnrollments
                   ? Math.round(((c.completedEnrollments ?? 0) / c.totalEnrollments) * 100)
                   : 0;
                 return (
-                  <tr key={c.id} className="hover:bg-gray-50 cursor-pointer">
-                    <td className="px-4 py-3 font-medium">{c.name}</td>
-                    <td className="px-4 py-3 text-gray-500">{c.taxYear}</td>
-                    <td className="px-4 py-3 text-gray-500">{c.taxObligation.replace(/_/g, " ")}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <div className="w-20 h-2 bg-gray-100 rounded-full overflow-hidden">
-                          <div className="h-full bg-blue-600 rounded-full" style={{ width: `${completion}%` }} />
+                  <tr key={c.id} className="hover:bg-surface-inset/50 cursor-pointer transition-colors">
+                    <td className="px-4 py-3.5 font-medium text-text-primary">{c.name}</td>
+                    <td className="px-4 py-3.5 text-text-secondary font-mono text-[12px]">{c.taxYear}</td>
+                    <td className="px-4 py-3.5 text-text-secondary">{formatObligation(c.taxObligation)}</td>
+                    <td className="px-4 py-3.5">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-20 h-1.5 bg-surface-inset rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-accent rounded-full transition-all duration-500"
+                            style={{ width: `${completion}%` }}
+                          />
                         </div>
-                        <span className="text-xs text-gray-500">{completion}%</span>
+                        <span className="text-[11px] font-mono text-text-muted w-8 text-right">{completion}%</span>
                       </div>
                     </td>
-                    <td className="px-4 py-3">
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${
-                        c.status === "active" ? "bg-green-100 text-green-700" :
-                        c.status === "completed" ? "bg-gray-100 text-gray-600" :
-                        c.status === "draft" ? "bg-blue-100 text-blue-700" :
-                        "bg-amber-100 text-amber-700"
-                      }`}>{c.status}</span>
+                    <td className="px-4 py-3.5">
+                      <StatusBadge status={c.status} />
                     </td>
-                    <td className="px-4 py-3 text-gray-500">
+                    <td className="px-4 py-3.5 text-text-muted">
                       {formatDistanceToNow(new Date(c.createdAt), { addSuffix: true })}
                     </td>
                   </tr>
@@ -118,6 +131,19 @@ export default function CampaignsPage() {
               })}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Load more */}
+      {campaignsQuery.hasNextPage && (
+        <div className="flex justify-center">
+          <button
+            onClick={() => campaignsQuery.fetchNextPage()}
+            disabled={campaignsQuery.isFetchingNextPage}
+            className="px-4 py-2.5 bg-surface-raised border border-border text-text-secondary rounded-[var(--radius-md)] hover:bg-surface-inset text-[13px] font-medium transition-colors disabled:opacity-50"
+          >
+            {campaignsQuery.isFetchingNextPage ? "Loading..." : "Load more campaigns"}
+          </button>
         </div>
       )}
 
@@ -130,107 +156,6 @@ export default function CampaignsPage() {
           error={createCampaign.error?.message}
         />
       )}
-    </div>
-  );
-}
-
-function CreateCampaignModal({ onClose, onSubmit, isLoading, error }: {
-  onClose: () => void;
-  onSubmit: (data: { name: string; taxYear: string; taxObligation: TaxObligation; deadlineDate: string }) => void;
-  isLoading: boolean;
-  error?: string;
-}) {
-  const [form, setForm] = useState({
-    name: "",
-    taxObligation: "" as TaxObligation | "",
-    taxYear: "",
-    deadlineDate: "",
-  });
-
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl max-w-lg w-full p-6 space-y-5">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold">New Campaign</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl">✕</button>
-        </div>
-
-        {error && <div className="text-red-600 text-sm bg-red-50 p-2 rounded">{error}</div>}
-
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Campaign Name</label>
-            <input
-              type="text"
-              placeholder="e.g. 2024/25 Self Assessment"
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-              className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Tax Obligation</label>
-            <select
-              value={form.taxObligation}
-              onChange={(e) => setForm({ ...form, taxObligation: e.target.value as TaxObligation })}
-              className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Select...</option>
-              {TAX_OBLIGATIONS.map((o) => (
-                <option key={o.value} value={o.value}>{o.label}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Tax Year</label>
-              <input
-                type="text"
-                placeholder="2024/25"
-                value={form.taxYear}
-                onChange={(e) => setForm({ ...form, taxYear: e.target.value })}
-                className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Deadline</label>
-              <input
-                type="date"
-                value={form.deadlineDate}
-                onChange={(e) => setForm({ ...form, deadlineDate: e.target.value })}
-                className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="flex gap-3 pt-2">
-          <button
-            onClick={onClose}
-            className="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm font-medium"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={() => {
-              if (form.name && form.taxObligation && form.taxYear && form.deadlineDate) {
-                onSubmit({
-                  name: form.name,
-                  taxYear: form.taxYear,
-                  taxObligation: form.taxObligation as TaxObligation,
-                  deadlineDate: new Date(form.deadlineDate).toISOString(),
-                });
-              }
-            }}
-            disabled={isLoading || !form.name || !form.taxObligation || !form.taxYear || !form.deadlineDate}
-            className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-500 text-sm font-medium disabled:opacity-50"
-          >
-            {isLoading ? "Creating..." : "Create Campaign"}
-          </button>
-        </div>
-      </div>
     </div>
   );
 }

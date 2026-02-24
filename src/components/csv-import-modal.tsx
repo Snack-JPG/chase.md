@@ -142,12 +142,12 @@ export function CsvImportModal({ onClose, onSuccess }: { onClose: () => void; on
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" role="dialog" aria-modal="true" aria-labelledby="csv-import-title">
       <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[85vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b">
-          <h2 className="text-lg font-bold">Import Clients from CSV</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl">✕</button>
+          <h2 id="csv-import-title" className="text-lg font-bold">Import Clients from CSV</h2>
+          <button onClick={onClose} aria-label="Close dialog" className="text-gray-400 hover:text-gray-600 text-xl">✕</button>
         </div>
 
         <div className="p-6 overflow-y-auto flex-1 space-y-4">

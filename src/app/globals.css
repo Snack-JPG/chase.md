@@ -1,1 +1,121 @@
 @import "tailwindcss";
+
+@theme {
+  /* Warm neutral palette - refined, editorial aesthetic */
+  --color-surface: #fafaf9;
+  --color-surface-raised: #ffffff;
+  --color-surface-inset: #f5f5f4;
+  --color-surface-overlay: rgba(0, 0, 0, 0.6);
+
+  --color-border: #e7e5e4;
+  --color-border-subtle: #f0eeec;
+
+  --color-text-primary: #1c1917;
+  --color-text-secondary: #78716c;
+  --color-text-muted: #a8a29e;
+  --color-text-inverse: #fafaf9;
+
+  /* Accent - warm teal-ish blue that's distinctive */
+  --color-accent: #0d9488;
+  --color-accent-hover: #0f766e;
+  --color-accent-light: #ccfbf1;
+  --color-accent-subtle: #f0fdfa;
+
+  /* Status colors */
+  --color-success: #16a34a;
+  --color-success-light: #dcfce7;
+  --color-warning: #d97706;
+  --color-warning-light: #fef3c7;
+  --color-danger: #dc2626;
+  --color-danger-light: #fef2f2;
+  --color-info: #2563eb;
+  --color-info-light: #dbeafe;
+
+  /* Sidebar */
+  --color-sidebar: #1c1917;
+  --color-sidebar-text: #d6d3d1;
+  --color-sidebar-text-active: #ffffff;
+  --color-sidebar-hover: #292524;
+  --color-sidebar-active: #0d9488;
+
+  /* Shadows */
+  --shadow-card: 0 1px 3px rgba(28, 25, 23, 0.04), 0 1px 2px rgba(28, 25, 23, 0.02);
+  --shadow-card-hover: 0 4px 12px rgba(28, 25, 23, 0.06), 0 1px 3px rgba(28, 25, 23, 0.04);
+  --shadow-overlay: 0 20px 60px rgba(28, 25, 23, 0.15);
+
+  /* Typography */
+  --font-display: "DM Sans", system-ui, sans-serif;
+  --font-body: "DM Sans", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  /* Radii */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+}
+
+/* Font imports */
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=JetBrains+Mono:wght@400;500&display=swap');
+
+/* Base styles */
+body {
+  font-family: var(--font-body);
+  color: var(--color-text-primary);
+  background: var(--color-surface);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
+}
+
+/* Focus ring utility */
+.focus-ring {
+  outline: none;
+}
+.focus-ring:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* Skeleton loading animation */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--color-surface-inset) 25%,
+    var(--color-border-subtle) 50%,
+    var(--color-surface-inset) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.8s ease-in-out infinite;
+  border-radius: var(--radius-sm);
+}
+
+/* Card hover transition */
+.card-hover {
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+.card-hover:hover {
+  box-shadow: var(--shadow-card-hover);
+  transform: translateY(-1px);
+}

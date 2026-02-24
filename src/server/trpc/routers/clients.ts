@@ -1,16 +1,36 @@
 import { z } from "zod";
 import { orgProcedure, router } from "../init";
-import { clients, auditLog, xeroConnections, xpmJobs, chaseMessages, chaseEnrollments } from "@/server/db/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { clients, auditLog, xeroConnections, xpmJobs, chaseMessages } from "@/server/db/schema";
+import { eq, and, gt } from "drizzle-orm";
 import { syncContacts } from "@/lib/xero-sync";
 
 export const clientsRouter = router({
-  list: orgProcedure.query(async ({ ctx }) => {
-    return ctx.db.query.clients.findMany({
-      where: eq(clients.practiceId, ctx.practiceId),
-      orderBy: (clients, { asc }) => [asc(clients.lastName)],
-    });
-  }),
+  list: orgProcedure
+    .input(z.object({
+      cursor: z.string().uuid().optional(),
+      limit: z.number().min(1).max(100).default(50),
+    }).optional())
+    .query(async ({ ctx, input }) => {
+      const limit = input?.limit ?? 50;
+      const rows = await ctx.db.query.clients.findMany({
+        where: input?.cursor
+          ? and(
+              eq(clients.practiceId, ctx.practiceId),
+              gt(clients.id, input.cursor),
+            )
+          : eq(clients.practiceId, ctx.practiceId),
+        orderBy: (clients, { asc }) => [asc(clients.lastName)],
+        limit: limit + 1,
+      });
+
+      let nextCursor: string | null = null;
+      if (rows.length > limit) {
+        const next = rows.pop()!;
+        nextCursor = next.id;
+      }
+
+      return { items: rows, nextCursor };
+    }),
 
   getById: orgProcedure
     .input(z.object({ id: z.string().uuid() }))

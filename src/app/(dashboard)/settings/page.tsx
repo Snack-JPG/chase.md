@@ -2,7 +2,14 @@
 
 import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc/client";
+import {
+  Check,
+  X,
+  AlertTriangle,
+  RefreshCw,
+} from "lucide-react";
 
+/* ---------- Xero Webhook Config ---------- */
 function XeroWebhookConfig() {
   const xeroStatus = trpc.practice.xeroStatus.useQuery();
   const saveWebhookKey = trpc.practice.saveWebhookKey.useMutation({
@@ -22,29 +29,29 @@ function XeroWebhookConfig() {
     : "";
 
   return (
-    <div className="mt-3 p-4 bg-white border rounded-lg space-y-3">
-      <h3 className="text-sm font-semibold text-gray-800">Xero Webhooks</h3>
-      <p className="text-xs text-gray-500">
+    <div className="mt-3 p-4 bg-surface-inset/50 border border-border rounded-[var(--radius-md)] space-y-3">
+      <h3 className="text-[13px] font-semibold text-text-primary">Xero Webhooks</h3>
+      <p className="text-[12px] text-text-muted leading-relaxed">
         Enable real-time contact sync. Register a webhook in your{" "}
-        <a href="https://developer.xero.com/app/manage" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
+        <a href="https://developer.xero.com/app/manage" target="_blank" rel="noopener noreferrer" className="text-accent hover:text-accent-hover underline underline-offset-2">
           Xero Developer Dashboard
         </a>{" "}
         with the URL below, then paste the webhook key here.
       </p>
 
       <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1">Webhook URL</label>
+        <label className="block text-[11px] font-medium text-text-muted uppercase tracking-wider mb-1.5">Webhook URL</label>
         <div className="flex items-center gap-2">
           <input
             type="text"
             readOnly
             value={webhookUrl}
-            className="flex-1 px-3 py-1.5 border rounded-lg text-xs bg-gray-50 text-gray-700"
+            className="flex-1 px-3 py-2 border border-border rounded-[var(--radius-md)] text-[12px] bg-surface-inset text-text-secondary font-mono"
             onClick={(e) => (e.target as HTMLInputElement).select()}
           />
           <button
             onClick={() => navigator.clipboard.writeText(webhookUrl)}
-            className="text-xs px-2 py-1.5 border rounded-lg hover:bg-gray-50"
+            className="text-[12px] px-3 py-2 border border-border rounded-[var(--radius-md)] hover:bg-surface-inset font-medium text-text-secondary transition-colors"
           >
             Copy
           </button>
@@ -52,38 +59,43 @@ function XeroWebhookConfig() {
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1">Webhook Key</label>
+        <label className="block text-[11px] font-medium text-text-muted uppercase tracking-wider mb-1.5">Webhook Key</label>
         <div className="flex items-center gap-2">
           <input
             type="password"
-            placeholder={xeroStatus.data.webhookKeySet ? "••••••••  (key saved)" : "Paste webhook key from Xero"}
+            placeholder={xeroStatus.data.webhookKeySet ? "Key saved" : "Paste webhook key from Xero"}
             value={webhookKey}
             onChange={(e) => setWebhookKey(e.target.value)}
-            className="flex-1 px-3 py-1.5 border rounded-lg text-xs"
+            className="flex-1 px-3 py-2 border border-border rounded-[var(--radius-md)] text-[12px] placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all"
           />
           <button
             onClick={() => {
               if (webhookKey.trim()) saveWebhookKey.mutate({ webhookKey: webhookKey.trim() });
             }}
             disabled={!webhookKey.trim() || saveWebhookKey.isPending}
-            className="text-xs px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-500 disabled:opacity-50"
+            className="text-[12px] px-3.5 py-2 bg-accent text-white rounded-[var(--radius-md)] hover:bg-accent-hover disabled:opacity-50 font-medium transition-colors"
           >
             {saveWebhookKey.isPending ? "Saving..." : "Save"}
           </button>
         </div>
-        {keySaved && <p className="text-xs text-green-600 mt-1">✓ Webhook key saved</p>}
+        {keySaved && (
+          <p className="text-[12px] text-success mt-1.5 flex items-center gap-1">
+            <Check className="w-3.5 h-3.5" /> Webhook key saved
+          </p>
+        )}
       </div>
 
       <div className="flex items-center gap-2">
-        <span className={`w-2 h-2 rounded-full ${xeroStatus.data.webhookKeySet ? "bg-green-500" : "bg-gray-300"}`} />
-        <span className="text-xs text-gray-600">
-          {xeroStatus.data.webhookKeySet ? "Webhook configured — real-time sync active" : "Webhook not configured — using scheduled sync only"}
+        <span className={`w-2 h-2 rounded-full ${xeroStatus.data.webhookKeySet ? "bg-success" : "bg-text-muted"}`} />
+        <span className="text-[12px] text-text-secondary">
+          {xeroStatus.data.webhookKeySet ? "Real-time sync active" : "Using scheduled sync only"}
         </span>
       </div>
     </div>
   );
 }
 
+/* ---------- Xero Connection Card ---------- */
 function XeroConnectionCard() {
   const xeroStatus = trpc.practice.xeroStatus.useQuery();
   const [disconnecting, setDisconnecting] = useState(false);
@@ -103,12 +115,12 @@ function XeroConnectionCard() {
 
   if (xeroStatus.isLoading) {
     return (
-      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+      <div className="flex items-center justify-between p-4 bg-surface-inset/50 rounded-[var(--radius-md)]">
         <div className="flex items-center gap-3">
-          <span className="text-2xl">📊</span>
+          <div className="w-9 h-9 rounded-[var(--radius-md)] bg-[#13B5EA]/10 flex items-center justify-center text-[15px] font-bold text-[#13B5EA]">X</div>
           <div>
-            <p className="font-medium text-sm">Xero</p>
-            <p className="text-xs text-gray-500">Loading...</p>
+            <p className="text-[13px] font-medium text-text-primary">Xero</p>
+            <p className="text-[12px] text-text-muted">Loading...</p>
           </div>
         </div>
       </div>
@@ -120,22 +132,22 @@ function XeroConnectionCard() {
   if (data?.connected) {
     return (
       <div>
-        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+        <div className="flex items-center justify-between p-4 bg-surface-inset/50 rounded-[var(--radius-md)]">
           <div className="flex items-center gap-3">
-            <span className="text-2xl">📊</span>
+            <div className="w-9 h-9 rounded-[var(--radius-md)] bg-[#13B5EA]/10 flex items-center justify-center text-[15px] font-bold text-[#13B5EA]">X</div>
             <div>
-              <p className="font-medium text-sm">Xero</p>
-              <p className="text-xs text-gray-500">
-                Connected to <strong>{data.tenantName}</strong>
+              <p className="text-[13px] font-medium text-text-primary">Xero</p>
+              <p className="text-[12px] text-text-muted">
+                Connected to <strong className="text-text-secondary">{data.tenantName}</strong>
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-xs px-2.5 py-1 rounded-full bg-green-100 text-green-700">Connected</span>
+            <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-success-light text-success ring-1 ring-inset ring-green-200">Connected</span>
             <button
               onClick={handleDisconnect}
               disabled={disconnecting}
-              className="text-xs px-3 py-1 rounded-full border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-50"
+              className="text-[12px] px-3 py-1.5 rounded-[var(--radius-md)] border border-red-200 text-danger hover:bg-danger-light disabled:opacity-50 font-medium transition-colors"
             >
               {disconnecting ? "Disconnecting..." : "Disconnect"}
             </button>
@@ -147,24 +159,33 @@ function XeroConnectionCard() {
   }
 
   return (
-    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+    <div className="flex items-center justify-between p-4 bg-surface-inset/50 rounded-[var(--radius-md)]">
       <div className="flex items-center gap-3">
-        <span className="text-2xl">📊</span>
+        <div className="w-9 h-9 rounded-[var(--radius-md)] bg-[#13B5EA]/10 flex items-center justify-center text-[15px] font-bold text-[#13B5EA]">X</div>
         <div>
-          <p className="font-medium text-sm">Xero</p>
-          <p className="text-xs text-gray-500">Import clients and push documents to Xero</p>
+          <p className="text-[13px] font-medium text-text-primary">Xero</p>
+          <p className="text-[12px] text-text-muted">Import clients and push documents to Xero</p>
         </div>
       </div>
       <a
         href="/api/xero/connect"
-        className="text-xs px-3 py-1.5 rounded-lg bg-[#13B5EA] text-white hover:bg-[#0e9ac7] font-medium"
+        className="text-[12px] px-3.5 py-2 rounded-[var(--radius-md)] bg-[#13B5EA] text-white hover:bg-[#0e9ac7] font-medium transition-colors"
       >
-        Connect to Xero
+        Connect
       </a>
     </div>
   );
 }
 
+/* ---------- Integration Item ---------- */
+const INTEGRATIONS = [
+  { id: "whatsapp", icon: "W", color: "bg-green-500/10 text-green-600", name: "WhatsApp Business", desc: "Send chases via WhatsApp", field: "twilioWhatsappNumber" as const },
+  { id: "sms", icon: "S", color: "bg-blue-500/10 text-blue-600", name: "SMS (Twilio)", desc: "Chase clients via text message", field: "twilioSmsNumber" as const },
+  { id: "email", icon: "E", color: "bg-purple-500/10 text-purple-600", name: "Custom Email Domain", desc: "Send from chase@yourdomain.co.uk", field: "customEmailDomain" as const },
+  { id: "stripe", icon: "$", color: "bg-violet-500/10 text-violet-600", name: "Stripe Billing", desc: "Manage your subscription", field: "stripeSubscriptionId" as const },
+];
+
+/* ---------- Settings Page ---------- */
 export default function SettingsPage() {
   const practiceQuery = trpc.practice.get.useQuery();
   const updatePractice = trpc.practice.update.useMutation({
@@ -189,12 +210,7 @@ export default function SettingsPage() {
     businessHoursStart: "09:00",
     businessHoursEnd: "17:30",
   });
-  const [whatsapp, setWhatsapp] = useState({
-    twilioWhatsappNumber: "",
-    whatsappOptInMessage: "",
-  });
 
-  // Load practice data into form
   useEffect(() => {
     if (practiceQuery.data) {
       const p = practiceQuery.data;
@@ -210,10 +226,6 @@ export default function SettingsPage() {
         businessHoursStart: p.businessHoursStart || "09:00",
         businessHoursEnd: p.businessHoursEnd || "17:30",
       });
-      setWhatsapp({
-        twilioWhatsappNumber: p.twilioWhatsappNumber || "",
-        whatsappOptInMessage: (p as Record<string, unknown>).whatsappOptInMessage as string || "Hi! Your accountant would like to send you document reminders via WhatsApp. Reply YES to opt in.",
-      });
     }
   }, [practiceQuery.data]);
 
@@ -227,16 +239,15 @@ export default function SettingsPage() {
     updatePractice.mutate(prefs);
   };
 
-  const saveWhatsapp = () => {
-    setSaveStatus(null);
-    updatePractice.mutate(whatsapp);
-  };
-
   if (practiceQuery.isLoading) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
-        <div className="bg-white rounded-xl border p-12 text-center text-gray-400">Loading settings...</div>
+        <h1 className="text-[22px] font-semibold text-text-primary tracking-tight">Settings</h1>
+        <div className="space-y-4">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="skeleton h-48 w-full rounded-[var(--radius-lg)]" />
+          ))}
+        </div>
       </div>
     );
   }
@@ -244,8 +255,8 @@ export default function SettingsPage() {
   if (practiceQuery.isError) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
-        <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg p-3">
+        <h1 className="text-[22px] font-semibold text-text-primary tracking-tight">Settings</h1>
+        <div className="bg-danger-light border border-red-200 text-danger text-[13px] rounded-[var(--radius-md)] px-4 py-3">
           Failed to load settings. {practiceQuery.error?.message}
         </div>
       </div>
@@ -254,125 +265,165 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
+        <h1 className="text-[22px] font-semibold text-text-primary tracking-tight">Settings</h1>
         {saveStatus === "saved" && (
-          <span className="text-sm text-green-600 bg-green-50 px-3 py-1 rounded-full">✓ Saved</span>
+          <span className="text-[12px] font-medium text-success bg-success-light px-3 py-1.5 rounded-full flex items-center gap-1.5">
+            <Check className="w-3.5 h-3.5" /> Saved
+          </span>
         )}
         {saveStatus === "error" && (
-          <span className="text-sm text-red-600 bg-red-50 px-3 py-1 rounded-full">Save failed</span>
+          <span className="text-[12px] font-medium text-danger bg-danger-light px-3 py-1.5 rounded-full flex items-center gap-1.5">
+            <X className="w-3.5 h-3.5" /> Save failed
+          </span>
         )}
       </div>
 
       {/* Practice Details */}
-      <div className="bg-white rounded-xl border p-6 space-y-4">
-        <h2 className="font-semibold text-gray-900">Practice Details</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Practice Name</label>
-            <input type="text" value={details.name} onChange={(e) => setDetails({ ...details, name: e.target.value })}
-              className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Contact Email</label>
-            <input type="email" value={details.email} onChange={(e) => setDetails({ ...details, email: e.target.value })}
-              className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-            <input type="tel" value={details.phone} onChange={(e) => setDetails({ ...details, phone: e.target.value })}
-              className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Website</label>
-            <input type="url" value={details.website} onChange={(e) => setDetails({ ...details, website: e.target.value })}
-              className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          </div>
+      <section className="bg-surface-raised rounded-[var(--radius-lg)] border border-border p-6 space-y-4" style={{ boxShadow: "var(--shadow-card)" }}>
+        <div>
+          <h2 className="text-[15px] font-semibold text-text-primary">Practice Details</h2>
+          <p className="text-[12px] text-text-muted mt-0.5">Your practice information visible to clients.</p>
         </div>
-        <button onClick={saveDetails} disabled={updatePractice.isPending}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 text-sm font-medium disabled:opacity-50">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {([
+            { label: "Practice Name", key: "name", type: "text" },
+            { label: "Contact Email", key: "email", type: "email" },
+            { label: "Phone", key: "phone", type: "tel" },
+            { label: "Website", key: "website", type: "url" },
+          ] as const).map((field) => (
+            <div key={field.key}>
+              <label className="block text-[12px] font-medium text-text-secondary mb-1.5">{field.label}</label>
+              <input
+                type={field.type}
+                value={details[field.key]}
+                onChange={(e) => setDetails({ ...details, [field.key]: e.target.value })}
+                className="w-full px-3 py-2.5 border border-border rounded-[var(--radius-md)] text-[13px] focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all"
+              />
+            </div>
+          ))}
+        </div>
+        <button
+          onClick={saveDetails}
+          disabled={updatePractice.isPending}
+          className="inline-flex items-center gap-2 px-4 py-2.5 bg-accent text-white rounded-[var(--radius-md)] hover:bg-accent-hover text-[13px] font-medium disabled:opacity-50 transition-colors shadow-sm"
+        >
+          {updatePractice.isPending && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
           {updatePractice.isPending ? "Saving..." : "Save Changes"}
         </button>
-      </div>
+      </section>
 
       {/* Chase Preferences */}
-      <div className="bg-white rounded-xl border p-6 space-y-4">
-        <h2 className="font-semibold text-gray-900">Chase Preferences</h2>
+      <section className="bg-surface-raised rounded-[var(--radius-lg)] border border-border p-6 space-y-4" style={{ boxShadow: "var(--shadow-card)" }}>
+        <div>
+          <h2 className="text-[15px] font-semibold text-text-primary">Chase Preferences</h2>
+          <p className="text-[12px] text-text-muted mt-0.5">Configure how and when chases are sent.</p>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Default Channel</label>
-            <select value={prefs.defaultChaseChannel} onChange={(e) => setPrefs({ ...prefs, defaultChaseChannel: e.target.value as typeof prefs.defaultChaseChannel })}
-              className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <label className="block text-[12px] font-medium text-text-secondary mb-1.5">Default Channel</label>
+            <select
+              value={prefs.defaultChaseChannel}
+              onChange={(e) => setPrefs({ ...prefs, defaultChaseChannel: e.target.value as typeof prefs.defaultChaseChannel })}
+              className="w-full px-3 py-2.5 border border-border rounded-[var(--radius-md)] text-[13px] focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all"
+            >
               <option value="whatsapp">WhatsApp (recommended)</option>
               <option value="email">Email</option>
               <option value="sms">SMS</option>
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Timezone</label>
-            <select value={prefs.timezone} onChange={(e) => setPrefs({ ...prefs, timezone: e.target.value })}
-              className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <label className="block text-[12px] font-medium text-text-secondary mb-1.5">Timezone</label>
+            <select
+              value={prefs.timezone}
+              onChange={(e) => setPrefs({ ...prefs, timezone: e.target.value })}
+              className="w-full px-3 py-2.5 border border-border rounded-[var(--radius-md)] text-[13px] focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all"
+            >
               <option value="Europe/London">UK (Europe/London)</option>
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Business Hours Start</label>
-            <input type="time" value={prefs.businessHoursStart} onChange={(e) => setPrefs({ ...prefs, businessHoursStart: e.target.value })}
-              className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <label className="block text-[12px] font-medium text-text-secondary mb-1.5">Business Hours Start</label>
+            <input
+              type="time"
+              value={prefs.businessHoursStart}
+              onChange={(e) => setPrefs({ ...prefs, businessHoursStart: e.target.value })}
+              className="w-full px-3 py-2.5 border border-border rounded-[var(--radius-md)] text-[13px] focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all"
+            />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Business Hours End</label>
-            <input type="time" value={prefs.businessHoursEnd} onChange={(e) => setPrefs({ ...prefs, businessHoursEnd: e.target.value })}
-              className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <label className="block text-[12px] font-medium text-text-secondary mb-1.5">Business Hours End</label>
+            <input
+              type="time"
+              value={prefs.businessHoursEnd}
+              onChange={(e) => setPrefs({ ...prefs, businessHoursEnd: e.target.value })}
+              className="w-full px-3 py-2.5 border border-border rounded-[var(--radius-md)] text-[13px] focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all"
+            />
           </div>
         </div>
-        <button onClick={savePrefs} disabled={updatePractice.isPending}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 text-sm font-medium disabled:opacity-50">
+        <button
+          onClick={savePrefs}
+          disabled={updatePractice.isPending}
+          className="inline-flex items-center gap-2 px-4 py-2.5 bg-accent text-white rounded-[var(--radius-md)] hover:bg-accent-hover text-[13px] font-medium disabled:opacity-50 transition-colors shadow-sm"
+        >
+          {updatePractice.isPending && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
           {updatePractice.isPending ? "Saving..." : "Save Preferences"}
         </button>
-      </div>
+      </section>
 
       {/* Integrations */}
-      <div className="bg-white rounded-xl border p-6 space-y-4">
-        <h2 className="font-semibold text-gray-900">Integrations</h2>
+      <section className="bg-surface-raised rounded-[var(--radius-lg)] border border-border p-6 space-y-4" style={{ boxShadow: "var(--shadow-card)" }}>
+        <div>
+          <h2 className="text-[15px] font-semibold text-text-primary">Integrations</h2>
+          <p className="text-[12px] text-text-muted mt-0.5">Connect your tools and services.</p>
+        </div>
 
-        {/* Xero Integration */}
         <XeroConnectionCard />
 
-        {[
-          { icon: "💬", name: "WhatsApp Business", desc: "Send chases via WhatsApp", connected: !!practiceQuery.data?.twilioWhatsappNumber },
-          { icon: "📱", name: "SMS (Twilio)", desc: "Chase clients via text message", connected: !!practiceQuery.data?.twilioSmsNumber },
-          { icon: "📧", name: "Custom Email Domain", desc: "Send from chase@yourdomain.co.uk", connected: !!practiceQuery.data?.customEmailDomain },
-          { icon: "💳", name: "Stripe Billing", desc: "Manage your subscription", connected: !!practiceQuery.data?.stripeSubscriptionId },
-        ].map((i) => (
-          <div key={i.name} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">{i.icon}</span>
-              <div>
-                <p className="font-medium text-sm">{i.name}</p>
-                <p className="text-xs text-gray-500">{i.desc}</p>
+        <div className="space-y-2">
+          {INTEGRATIONS.map((i) => {
+            const connected = !!practiceQuery.data?.[i.field];
+            return (
+              <div key={i.id} className="flex items-center justify-between p-4 bg-surface-inset/50 rounded-[var(--radius-md)]">
+                <div className="flex items-center gap-3">
+                  <div className={`w-9 h-9 rounded-[var(--radius-md)] flex items-center justify-center text-[14px] font-bold ${i.color}`}>
+                    {i.icon}
+                  </div>
+                  <div>
+                    <p className="text-[13px] font-medium text-text-primary">{i.name}</p>
+                    <p className="text-[12px] text-text-muted">{i.desc}</p>
+                  </div>
+                </div>
+                <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ring-1 ring-inset ${
+                  connected
+                    ? "bg-success-light text-success ring-green-200"
+                    : "bg-warning-light text-warning ring-amber-200"
+                }`}>
+                  {connected ? "Connected" : "Not connected"}
+                </span>
               </div>
-            </div>
-            <span className={`text-xs px-2.5 py-1 rounded-full ${
-              i.connected ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"
-            }`}>{i.connected ? "Connected" : "Not connected"}</span>
-          </div>
-        ))}
-      </div>
+            );
+          })}
+        </div>
+      </section>
 
       {/* Danger Zone */}
-      <div className="bg-white rounded-xl border border-red-200 p-6 space-y-4">
-        <h2 className="font-semibold text-red-600">Danger Zone</h2>
+      <section className="bg-surface-raised rounded-[var(--radius-lg)] border border-red-200 p-6 space-y-4" style={{ boxShadow: "var(--shadow-card)" }}>
+        <div className="flex items-center gap-2">
+          <AlertTriangle className="w-4 h-4 text-danger" />
+          <h2 className="text-[15px] font-semibold text-danger">Danger Zone</h2>
+        </div>
         <div className="flex items-center justify-between">
           <div>
-            <p className="font-medium text-sm">Delete Practice Account</p>
-            <p className="text-xs text-gray-500">Permanently delete all data. This cannot be undone.</p>
+            <p className="text-[13px] font-medium text-text-primary">Delete Practice Account</p>
+            <p className="text-[12px] text-text-muted">Permanently delete all data. This cannot be undone.</p>
           </div>
-          <button className="px-4 py-2 bg-white border border-red-300 text-red-600 rounded-lg hover:bg-red-50 text-sm font-medium">
+          <button className="px-4 py-2 bg-surface-raised border border-red-200 text-danger rounded-[var(--radius-md)] hover:bg-danger-light text-[13px] font-medium transition-colors">
             Delete Account
           </button>
         </div>
-      </div>
+      </section>
     </div>
   );
 }
