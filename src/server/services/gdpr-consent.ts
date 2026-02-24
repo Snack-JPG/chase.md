@@ -7,6 +7,7 @@
 
 import { db } from "@/server/db";
 import {
+  auditLog,
   clients,
   consentRecords,
   chaseEnrollments,

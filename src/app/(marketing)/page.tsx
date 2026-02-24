@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Fraunces, Outfit, JetBrains_Mono } from "next/font/google";
 import { motion, useInView } from "motion/react";
 import { useRef, useState } from "react";
@@ -167,9 +168,9 @@ export default function MarketingPage() {
       {/* Nav */}
       <nav className="fixed top-0 left-0 right-0 z-40 backdrop-blur-xl bg-zinc-950/70 border-b border-white/5">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          <a href="/" className={`${fraunces.className} text-xl text-white tracking-tight`}>
+          <Link href="/" className={`${fraunces.className} text-xl text-white tracking-tight`}>
             chase<span className="text-emerald-400">.md</span>
-          </a>
+          </Link>
           <div className="hidden md:flex items-center gap-8 text-sm text-zinc-400">
             <a href="#how-it-works" className="hover:text-white transition-colors">How It Works</a>
             <a href="#features" className="hover:text-white transition-colors">Features</a>

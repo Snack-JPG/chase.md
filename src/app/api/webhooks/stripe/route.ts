@@ -1,21 +1,12 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { db } from "@/server/db";
-import { practices, auditLog } from "@/server/db/schema";
+import { practices } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
-
-function getStripe() {
-  return new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2025-02-24.acacia" });
-}
-
-const PLAN_MAP: Record<string, "starter" | "professional" | "scale"> = {
-  price_starter: "starter",
-  price_professional: "professional",
-  price_scale: "scale",
-};
+import { getStripe, PLAN_FROM_PRICE } from "@/lib/stripe";
 
 function planFromPriceId(priceId: string): "starter" | "professional" | "scale" {
-  return PLAN_MAP[priceId] ?? "starter";
+  return PLAN_FROM_PRICE[priceId] ?? "starter";
 }
 
 export async function POST(req: Request) {
@@ -40,7 +31,9 @@ export async function POST(req: Request) {
     switch (event.type) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
-        if (session.subscription && session.customer) {
+        const practiceId = session.metadata?.practiceId;
+
+        if (session.subscription && session.customer && practiceId) {
           const sub = await stripe.subscriptions.retrieve(session.subscription as string);
           const priceId = sub.items.data[0]?.price?.id ?? "";
 
@@ -52,7 +45,7 @@ export async function POST(req: Request) {
               trialEndsAt: sub.trial_end ? new Date(sub.trial_end * 1000) : null,
               updatedAt: new Date(),
             })
-            .where(eq(practices.stripeCustomerId, session.customer as string));
+            .where(eq(practices.id, practiceId));
         }
         break;
       }
@@ -80,6 +73,20 @@ export async function POST(req: Request) {
             updatedAt: new Date(),
           })
           .where(eq(practices.stripeSubscriptionId, sub.id));
+        break;
+      }
+
+      case "customer.subscription.trial_will_end": {
+        // Fires 3 days before trial ends
+        const sub = event.data.object as Stripe.Subscription;
+        const practice = await db.query.practices.findFirst({
+          where: eq(practices.stripeSubscriptionId, sub.id),
+        });
+
+        if (practice) {
+          // TODO: Send trial ending email via Resend
+          console.log(`Trial ending soon for practice ${practice.id} (${practice.name})`);
+        }
         break;
       }
     }

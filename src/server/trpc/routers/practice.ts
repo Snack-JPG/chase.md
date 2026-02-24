@@ -22,6 +22,8 @@ export const practiceRouter = router({
       businessHoursEnd: z.string().optional(),
       primaryColor: z.string().optional(),
       fromEmailName: z.string().optional(),
+      twilioWhatsappNumber: z.string().optional(),
+      whatsappOptInMessage: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       const [updated] = await ctx.db.update(practices)
