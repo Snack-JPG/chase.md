@@ -208,7 +208,7 @@ export default function MarketingPage() {
               scrolledPastHero ? "text-[#1c1917]" : "text-white"
             }`}
           >
-            chase<span className="text-[#0d9488]">.md</span>
+            Chase<span className="text-[#0d9488]">.md</span>
           </Link>
 
           {/* Desktop nav */}
@@ -801,7 +801,7 @@ export default function MarketingPage() {
       <footer className="bg-[#1c1917] border-t border-white/5 py-12 px-6">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
           <div className={`${dmSerif.className} text-lg text-white`}>
-            chase<span className="text-[#0d9488]">.md</span>
+            Chase<span className="text-[#0d9488]">.md</span>
           </div>
           <div className="flex items-center gap-8 text-sm text-zinc-500">
             <a href="#" className="hover:text-zinc-300 transition-colors">Privacy</a>
