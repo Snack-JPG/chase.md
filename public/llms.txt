@@ -1,0 +1,51 @@
+# Chase.md
+
+> AI-powered document chasing for UK accountancy practices.
+
+Chase.md automates the repetitive process of requesting, following up on, and collecting documents from clients. It replaces the manual cycle of emails, calls, and reminders with intelligent multi-channel campaigns.
+
+## What it does
+
+- Sends automated document requests via email, SMS, and WhatsApp
+- Escalates through configurable schedules (gentle reminder → firm → urgent)
+- Provides clients with a magic link portal — no login, no password, no app download
+- AI classifies uploaded documents and flags mismatches
+- Syncs documents and client data with Xero
+- Tracks progress in a real-time dashboard
+
+## Key features
+
+- Multi-channel escalation (Email → SMS → WhatsApp)
+- Magic link client portal (zero-friction document upload)
+- AI document classification (powered by Claude)
+- Xero integration (client sync + document filing)
+- Campaign management (bulk document requests)
+- Live progress dashboard
+- GDPR compliant (UK data residency, consent tracking, data export/erasure)
+- Bank-grade security (AES-256 encryption, TLS 1.3)
+
+## Who it's for
+
+UK accountancy practices spending hundreds of hours per year chasing clients for tax documents, bank statements, ID verification, and other compliance paperwork.
+
+## Pricing
+
+- Starter: £79/mo — 1 user, 50 clients, email only
+- Professional: £149/mo — 5 users, 200 clients, all channels + Xero
+- Enterprise: £249/mo — unlimited users/clients, API access, custom integrations
+
+## Links
+
+- Website: https://chase.md
+- Contact: hello@chase.md
+
+## Technical stack
+
+- Next.js 15 (React 19, TypeScript)
+- Drizzle ORM + Neon Postgres
+- Clerk authentication (multi-org)
+- Stripe billing
+- Twilio (SMS/WhatsApp)
+- Resend (email)
+- Cloudflare R2 (document storage)
+- Anthropic Claude (AI classification)

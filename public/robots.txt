@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /api/
+Disallow: /sign-in
+Disallow: /sign-up
+Disallow: /settings
+Disallow: /clients
+Disallow: /campaigns
+Disallow: /p/
+
+Sitemap: https://chase.md/sitemap.xml
