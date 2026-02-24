@@ -59,12 +59,19 @@ export async function dispatchMessage(messageId: string) {
         return;
       }
 
+      // Check WhatsApp opt-in
+      if (!client.whatsappOptIn) {
+        await markFailed(messageId, "Client has not opted in to WhatsApp");
+        return;
+      }
+
       await sendWhatsAppChase({
         messageId,
         to: whatsappNumber,
         from: practice.twilioWhatsappNumber,
         templateSid: message.whatsappTemplateName || undefined,
         bodyText: message.bodyText,
+        clientId: client.id,
       });
       break;
     }

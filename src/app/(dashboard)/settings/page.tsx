@@ -189,6 +189,10 @@ export default function SettingsPage() {
     businessHoursStart: "09:00",
     businessHoursEnd: "17:30",
   });
+  const [whatsapp, setWhatsapp] = useState({
+    twilioWhatsappNumber: "",
+    whatsappOptInMessage: "",
+  });
 
   // Load practice data into form
   useEffect(() => {
@@ -206,6 +210,10 @@ export default function SettingsPage() {
         businessHoursStart: p.businessHoursStart || "09:00",
         businessHoursEnd: p.businessHoursEnd || "17:30",
       });
+      setWhatsapp({
+        twilioWhatsappNumber: p.twilioWhatsappNumber || "",
+        whatsappOptInMessage: (p as Record<string, unknown>).whatsappOptInMessage as string || "Hi! Your accountant would like to send you document reminders via WhatsApp. Reply YES to opt in.",
+      });
     }
   }, [practiceQuery.data]);
 
@@ -217,6 +225,11 @@ export default function SettingsPage() {
   const savePrefs = () => {
     setSaveStatus(null);
     updatePractice.mutate(prefs);
+  };
+
+  const saveWhatsapp = () => {
+    setSaveStatus(null);
+    updatePractice.mutate(whatsapp);
   };
 
   if (practiceQuery.isLoading) {

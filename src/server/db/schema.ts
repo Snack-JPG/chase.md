@@ -91,6 +91,8 @@ export const practices = pgTable("practices", {
   twilioWhatsappNumber: varchar("twilio_whatsapp_number", { length: 50 }),
   twilioSmsNumber: varchar("twilio_sms_number", { length: 50 }),
   whatsappBusinessId: varchar("whatsapp_business_id", { length: 255 }),
+  whatsappOptInMessage: text("whatsapp_opt_in_message"),
+  whatsappDefaultTemplateSids: jsonb("whatsapp_default_template_sids").default({}),
 
   resendDomainId: varchar("resend_domain_id", { length: 255 }),
   customEmailDomain: varchar("custom_email_domain", { length: 255 }),
@@ -153,6 +155,10 @@ export const clients = pgTable("clients", {
   vatNumber: varchar("vat_number", { length: 12 }),
   taxObligations: jsonb("tax_obligations").default([]),
   accountingYearEnd: varchar("accounting_year_end", { length: 5 }),
+
+  whatsappOptIn: boolean("whatsapp_opt_in").default(false),
+  whatsappOptInAt: timestamp("whatsapp_opt_in_at", { withTimezone: true }),
+  whatsappLastInboundAt: timestamp("whatsapp_last_inbound_at", { withTimezone: true }),
 
   chaseEnabled: boolean("chase_enabled").default(true),
   notes: text("notes"),
@@ -469,6 +475,35 @@ export const auditLog = pgTable("audit_log", {
   index("audit_entity_idx").on(t.entityType, t.entityId),
   index("audit_created_at_idx").on(t.createdAt),
 ]);
+
+// ============================================================
+// CLIENT NOTES (inbound messages, activity log)
+// ============================================================
+
+export const clientNotes = pgTable("client_notes", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  practiceId: uuid("practice_id").notNull().references(() => practices.id),
+  clientId: uuid("client_id").notNull().references(() => clients.id),
+
+  source: varchar("source", { length: 50 }).notNull(), // "whatsapp_inbound", "sms_inbound", "manual", "system"
+  content: text("content").notNull(),
+  mediaUrl: varchar("media_url", { length: 500 }),
+  mediaType: varchar("media_type", { length: 100 }),
+
+  externalMessageId: varchar("external_message_id", { length: 255 }),
+
+  createdBy: uuid("created_by").references(() => users.id),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => [
+  index("client_notes_client_id_idx").on(t.clientId),
+  index("client_notes_practice_id_idx").on(t.practiceId),
+]);
+
+export const clientNotesRelations = relations(clientNotes, ({ one }) => ({
+  practice: one(practices, { fields: [clientNotes.practiceId], references: [practices.id] }),
+  client: one(clients, { fields: [clientNotes.clientId], references: [clients.id] }),
+  createdByUser: one(users, { fields: [clientNotes.createdBy], references: [users.id] }),
+}));
 
 // ============================================================
 // XERO INTEGRATION
