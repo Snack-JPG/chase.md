@@ -67,7 +67,6 @@ function Section({
 // --- FAQ Item ---
 function FAQItem({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = useState(false);
-  const [waitlistSubmitted, setWaitlistSubmitted] = useState(false);
   return (
     <div className="border-b border-white/10">
       <button
@@ -158,6 +157,7 @@ function PricingCard({
 
 // --- Main Page ---
 export default function MarketingPage() {
+  const [waitlistSubmitted, setWaitlistSubmitted] = useState(false);
   return (
     <div
       className={`${fraunces.variable} ${outfit.variable} ${jetbrains.variable} font-[family-name:var(--font-outfit)] bg-zinc-950 text-zinc-300 min-h-screen selection:bg-emerald-500/30 selection:text-white`}
