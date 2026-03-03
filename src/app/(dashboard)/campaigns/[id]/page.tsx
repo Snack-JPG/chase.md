@@ -74,7 +74,7 @@ export default function CampaignDetailPage() {
         <p className="text-[15px] font-medium text-text-primary">Campaign not found</p>
         <Link
           href="/dashboard/campaigns"
-          className="text-[13px] text-accent hover:text-accent-hover flex items-center gap-1.5"
+          className="text-[13px] text-primary hover:text-primary/80 flex items-center gap-1.5"
         >
           <ArrowLeft className="w-3.5 h-3.5" /> Back to campaigns
         </Link>
@@ -110,7 +110,7 @@ export default function CampaignDetailPage() {
   const stats = [
     { label: "Total", value: totalCount, icon: Users, color: "text-text-primary" },
     { label: "Completed", value: completedCount, icon: CheckCircle2, color: "text-success" },
-    { label: "In Progress", value: activeCount, icon: Clock, color: "text-accent" },
+    { label: "In Progress", value: activeCount, icon: Clock, color: "text-primary" },
     { label: "Not Started", value: pendingCount, icon: AlertCircle, color: "text-text-muted" },
   ];
 
@@ -149,7 +149,7 @@ export default function CampaignDetailPage() {
               <button
                 onClick={() => updateStatus.mutate({ id: campaignId, status: "active" })}
                 disabled={updateStatus.isPending || totalCount === 0}
-                className="inline-flex items-center gap-2 px-4 py-2.5 bg-accent text-white rounded-[var(--radius-md)] hover:bg-accent-hover text-[13px] font-medium transition-colors disabled:opacity-50 shadow-sm"
+                className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-[var(--radius-md)] hover:bg-primary/90 text-[13px] font-medium transition-colors disabled:opacity-50 shadow-sm"
               >
                 <Play className="w-3.5 h-3.5" />
                 {updateStatus.isPending ? "Launching..." : "Launch"}
@@ -179,7 +179,7 @@ export default function CampaignDetailPage() {
               <button
                 onClick={() => updateStatus.mutate({ id: campaignId, status: "active" })}
                 disabled={updateStatus.isPending}
-                className="inline-flex items-center gap-2 px-4 py-2.5 bg-accent text-white rounded-[var(--radius-md)] hover:bg-accent-hover text-[13px] font-medium transition-colors disabled:opacity-50 shadow-sm"
+                className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-[var(--radius-md)] hover:bg-primary/90 text-[13px] font-medium transition-colors disabled:opacity-50 shadow-sm"
               >
                 <Play className="w-3.5 h-3.5" />
                 {updateStatus.isPending ? "Resuming..." : "Resume"}
@@ -295,7 +295,7 @@ export default function CampaignDetailPage() {
                         <div className="flex items-center gap-2">
                           <div className="w-20 h-1.5 bg-surface-inset rounded-full overflow-hidden">
                             <div
-                              className="h-full bg-accent rounded-full transition-all duration-500"
+                              className="h-full bg-primary rounded-full transition-all duration-500"
                               style={{ width: `${enrollment.completionPercent ?? 0}%` }}
                             />
                           </div>

@@ -1,10 +1,25 @@
 "use client";
 
 import { useParams } from "next/navigation";
+import { useState } from "react";
 import { trpc } from "@/lib/trpc/client";
 import { formatDistanceToNow, format } from "date-fns";
-import { useState } from "react";
 import Link from "next/link";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { StatusDot } from "@/components/ui/status-dot";
+import { EscalationBadge } from "@/components/ui/escalation-badge";
+import { ChaseTimeline } from "@/components/ui/chase-timeline";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   ArrowLeft,
   Mail,
@@ -12,29 +27,45 @@ import {
   MessageSquare,
   FileText,
   Send,
-  Edit3,
+  ExternalLink,
+  Copy,
+  Pause,
+  Play,
+  CheckCircle,
   Save,
   X,
+  Clock,
+  FileUp,
+  Calendar,
+  Edit3,
+  Eye,
+  MoreHorizontal,
 } from "lucide-react";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   getClientTypeConfig,
-  getEscalationStyle,
   getDocumentStatusStyle,
-  getMessageStatusStyle,
+  getEnrollmentStatusStyle,
 } from "@/lib/constants";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
-// ─── Badge ──────────────────────────────────────────────
+/* ---------- Escalation level → numeric ---------- */
+const ESCALATION_MAP: Record<string, number> = {
+  gentle: 1,
+  reminder: 1,
+  firm: 2,
+  urgent: 3,
+  escalate: 4,
+  final: 5,
+};
 
-function Badge({ label, colorClass }: { label: string; colorClass: string }) {
-  return (
-    <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ring-1 ring-inset capitalize ${colorClass}`} role="status">
-      {label}
-    </span>
-  );
-}
-
-// ─── Main Page ──────────────────────────────────────────────
-
+/* ---------- Main Page ---------- */
 export default function ClientDetailPage() {
   const params = useParams();
   const clientId = params.id as string;
@@ -43,7 +74,10 @@ export default function ClientDetailPage() {
   const docsQuery = trpc.documents.listByClient.useQuery({ clientId });
   const messagesQuery = trpc.clients.messages.useQuery({ clientId });
   const updateClient = trpc.clients.update.useMutation({
-    onSuccess: () => clientQuery.refetch(),
+    onSuccess: () => {
+      clientQuery.refetch();
+      toast.success("Client updated");
+    },
   });
 
   const client = clientQuery.data;
@@ -54,11 +88,9 @@ export default function ClientDetailPage() {
     return (
       <div className="space-y-6">
         <div className="skeleton h-8 w-48" />
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="skeleton h-44 w-full rounded-[var(--radius-lg)]" />
-          ))}
-        </div>
+        <div className="skeleton h-40 w-full rounded-lg" />
+        <div className="skeleton h-8 w-64" />
+        <div className="skeleton h-64 w-full rounded-lg" />
       </div>
     );
   }
@@ -66,416 +98,688 @@ export default function ClientDetailPage() {
   if (!client) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] gap-3">
-        <div className="w-14 h-14 rounded-full bg-surface-inset flex items-center justify-center mb-2">
-          <FileText className="w-6 h-6 text-text-muted" />
+        <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center mb-2">
+          <FileText className="w-6 h-6 text-muted-foreground" />
         </div>
-        <p className="text-[15px] font-medium text-text-primary">Client not found</p>
-        <Link
-          href="/dashboard/clients"
-          className="text-[13px] text-accent hover:text-accent-hover flex items-center gap-1.5"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" /> Back to clients
-        </Link>
+        <p className="text-[15px] font-medium text-foreground">Client not found</p>
+        <Button asChild variant="link" size="sm">
+          <Link href="/dashboard/clients">
+            <ArrowLeft className="w-3.5 h-3.5 mr-1.5" /> Back to clients
+          </Link>
+        </Button>
       </div>
     );
   }
 
   const enrollments = client.enrollments ?? [];
-  const activeEnrollments = enrollments.filter((e) => e.status === "active" || e.status === "pending");
-  const completedEnrollments = enrollments.filter((e) => e.status === "completed");
+  const activeEnrollment = enrollments.find(
+    (e) => e.status === "active" || e.status === "pending",
+  );
   const clientTypeConfig = getClientTypeConfig(client.clientType);
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <Link
-            href="/dashboard/clients"
-            className="text-[13px] text-text-muted hover:text-text-secondary inline-flex items-center gap-1.5 mb-3 transition-colors"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" /> All Clients
-          </Link>
-          <h1 className="text-[22px] font-semibold text-text-primary tracking-tight flex items-center gap-3">
-            {client.firstName} {client.lastName}
-            {client.xeroContactId && (
-              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-teal-50 text-teal-700 ring-1 ring-inset ring-teal-200 uppercase tracking-wide">
-                Xero
-              </span>
-            )}
-          </h1>
-          {client.companyName && (
-            <p className="text-[14px] text-text-secondary mt-0.5">{client.companyName}</p>
-          )}
-        </div>
-        <button
-          onClick={() => updateClient.mutate({ id: clientId, chaseEnabled: !client.chaseEnabled })}
-          className={`px-4 py-2.5 rounded-[var(--radius-md)] text-[13px] font-medium transition-colors ${
-            client.chaseEnabled
-              ? "bg-surface-inset text-text-secondary hover:bg-border"
-              : "bg-accent text-white hover:bg-accent-hover shadow-sm"
-          }`}
+      {/* Back + Header */}
+      <div>
+        <Link
+          href="/dashboard/clients"
+          className="text-[13px] text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 mb-3 transition-colors"
         >
-          {client.chaseEnabled ? "Pause Chasing" : "Enable Chasing"}
-        </button>
-      </div>
+          <ArrowLeft className="w-3.5 h-3.5" /> All Clients
+        </Link>
 
-      {/* Info Cards Row */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Contact Info */}
-        <div className="bg-surface-raised rounded-[var(--radius-lg)] border border-border p-5 space-y-3" style={{ boxShadow: "var(--shadow-card)" }}>
-          <h2 className="text-[11px] font-medium text-text-muted uppercase tracking-wider">Contact</h2>
-          <div className="space-y-2.5 text-[13px]">
-            {client.email && (
-              <div className="flex items-center gap-2.5">
-                <Mail className="w-3.5 h-3.5 text-text-muted" />
-                <a href={`mailto:${client.email}`} className="text-accent hover:text-accent-hover transition-colors">{client.email}</a>
+        {/* Header Card */}
+        <div className="rounded-lg border bg-card p-5">
+          <div className="flex items-start justify-between">
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-3">
+                <h1 className="text-xl font-semibold text-foreground tracking-tight">
+                  {client.firstName} {client.lastName}
+                </h1>
+                <StatusDot
+                  status={client.chaseEnabled ? "active" : "paused"}
+                  size="md"
+                />
+                {activeEnrollment && (
+                  <EscalationBadge
+                    level={activeEnrollment.currentEscalationLevel ?? "gentle"}
+                  />
+                )}
+                {client.xeroContactId && (
+                  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-teal-500/10 text-teal-400 ring-1 ring-inset ring-teal-500/20 uppercase tracking-wide">
+                    Xero
+                  </span>
+                )}
               </div>
-            )}
-            {client.phone && (
-              <div className="flex items-center gap-2.5">
-                <Phone className="w-3.5 h-3.5 text-text-muted" />
-                <span className="text-text-primary">{client.phone}</span>
+              {client.companyName && (
+                <p className="text-[14px] text-muted-foreground">{client.companyName}</p>
+              )}
+              <div className="flex items-center gap-4 text-[13px] text-muted-foreground">
+                {client.email && (
+                  <span className="flex items-center gap-1.5">
+                    <Mail className="w-3.5 h-3.5" />
+                    {client.email}
+                  </span>
+                )}
+                {client.phone && (
+                  <span className="flex items-center gap-1.5">
+                    <Phone className="w-3.5 h-3.5" />
+                    {client.phone}
+                  </span>
+                )}
               </div>
-            )}
-            {client.whatsappPhone && (
-              <div className="flex items-center gap-2.5">
-                <MessageSquare className="w-3.5 h-3.5 text-text-muted" />
-                <span className="text-text-primary">{client.whatsappPhone}</span>
-              </div>
-            )}
-            <div className="flex items-center gap-2.5">
-              <Send className="w-3.5 h-3.5 text-text-muted" />
-              <span className="text-text-primary capitalize">{client.preferredChannel ?? "whatsapp"}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Tax Details */}
-        <div className="bg-surface-raised rounded-[var(--radius-lg)] border border-border p-5 space-y-3" style={{ boxShadow: "var(--shadow-card)" }}>
-          <h2 className="text-[11px] font-medium text-text-muted uppercase tracking-wider">Details</h2>
-          <div className="space-y-2 text-[13px]">
-            <div className="flex justify-between">
-              <span className="text-text-muted">Type</span>
-              <span className="font-medium text-text-primary">{clientTypeConfig.label}</span>
-            </div>
-            {client.utr && (
-              <div className="flex justify-between">
-                <span className="text-text-muted">UTR</span>
-                <span className="font-mono text-[12px] text-text-secondary">{client.utr}</span>
-              </div>
-            )}
-            {client.companyNumber && (
-              <div className="flex justify-between">
-                <span className="text-text-muted">Co. Number</span>
-                <span className="font-mono text-[12px] text-text-secondary">{client.companyNumber}</span>
-              </div>
-            )}
-            {client.vatNumber && (
-              <div className="flex justify-between">
-                <span className="text-text-muted">VAT</span>
-                <span className="font-mono text-[12px] text-text-secondary">{client.vatNumber}</span>
-              </div>
-            )}
-            {client.accountingYearEnd && (
-              <div className="flex justify-between">
-                <span className="text-text-muted">Year End</span>
-                <span className="text-text-primary">{client.accountingYearEnd}</span>
-              </div>
-            )}
-            {client.externalRef && (
-              <div className="flex justify-between">
-                <span className="text-text-muted">Ref</span>
-                <span className="font-mono text-[12px] text-text-secondary">{client.externalRef}</span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Chase Status */}
-        <div className="bg-surface-raised rounded-[var(--radius-lg)] border border-border p-5 space-y-3" style={{ boxShadow: "var(--shadow-card)" }}>
-          <h2 className="text-[11px] font-medium text-text-muted uppercase tracking-wider">Chase Status</h2>
-          <div className="space-y-2 text-[13px]">
-            <div className="flex justify-between items-center">
-              <span className="text-text-muted">Status</span>
-              <Badge
-                label={client.chaseEnabled ? "Active" : "Paused"}
-                colorClass={client.chaseEnabled ? "bg-success-light text-success ring-green-200" : "bg-stone-100 text-stone-500 ring-stone-200"}
-              />
-            </div>
-            <div className="flex justify-between">
-              <span className="text-text-muted">Last Chased</span>
-              <span className="text-text-primary">{client.lastChasedAt ? formatDistanceToNow(new Date(client.lastChasedAt), { addSuffix: true }) : "Never"}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-text-muted">Active Campaigns</span>
-              <span className="font-medium text-text-primary">{activeEnrollments.length}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-text-muted">Completed</span>
-              <span className="font-medium text-text-primary">{completedEnrollments.length}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-text-muted">Documents</span>
-              <span className="font-medium text-text-primary">{documents.length}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Tags */}
-      {Array.isArray(client.tags) && client.tags.length > 0 && (
-        <div className="flex gap-2 flex-wrap">
-          {(client.tags as string[]).map((tag) => (
-            <span key={tag} className="text-[12px] px-2.5 py-1 rounded-full bg-surface-inset text-text-secondary ring-1 ring-inset ring-border">
-              {tag}
-            </span>
-          ))}
-        </div>
-      )}
-
-      {/* Enrollments */}
-      <section className="space-y-3">
-        <h2 className="text-[15px] font-semibold text-text-primary">Campaign Enrollments</h2>
-        {enrollments.length === 0 ? (
-          <div className="bg-surface-raised rounded-[var(--radius-lg)] border border-border p-8 text-center" style={{ boxShadow: "var(--shadow-card)" }}>
-            <p className="text-[13px] text-text-muted">Not enrolled in any campaigns yet</p>
-          </div>
-        ) : (
-          <div className="bg-surface-raised rounded-[var(--radius-lg)] border border-border overflow-hidden" style={{ boxShadow: "var(--shadow-card)" }}>
-            <table className="w-full text-[13px]">
-              <thead>
-                <tr className="border-b border-border bg-surface-inset/50">
-                  <th className="text-left px-4 py-3 font-medium text-text-muted text-[12px] uppercase tracking-wider">Campaign</th>
-                  <th className="text-left px-4 py-3 font-medium text-text-muted text-[12px] uppercase tracking-wider">Status</th>
-                  <th className="text-left px-4 py-3 font-medium text-text-muted text-[12px] uppercase tracking-wider">Escalation</th>
-                  <th className="text-left px-4 py-3 font-medium text-text-muted text-[12px] uppercase tracking-wider">Chases</th>
-                  <th className="text-left px-4 py-3 font-medium text-text-muted text-[12px] uppercase tracking-wider">Progress</th>
-                  <th className="text-left px-4 py-3 font-medium text-text-muted text-[12px] uppercase tracking-wider">Next Chase</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {enrollments.map((e) => (
-                  <tr key={e.id} className="hover:bg-surface-inset/50 transition-colors">
-                    <td className="px-4 py-3.5 font-medium text-text-primary font-mono text-[12px]">{e.campaignId.slice(0, 8)}&hellip;</td>
-                    <td className="px-4 py-3.5">
-                      <Badge
-                        label={e.status}
-                        colorClass={
-                          e.status === "active" ? "bg-success-light text-success ring-green-200"
-                          : e.status === "completed" ? "bg-info-light text-info ring-blue-200"
-                          : e.status === "opted_out" ? "bg-danger-light text-danger ring-red-200"
-                          : "bg-stone-100 text-stone-600 ring-stone-200"
-                        }
-                      />
-                    </td>
-                    <td className="px-4 py-3.5">
-                      <Badge
-                        label={e.currentEscalationLevel ?? "gentle"}
-                        colorClass={getEscalationStyle(e.currentEscalationLevel ?? "gentle")}
-                      />
-                    </td>
-                    <td className="px-4 py-3.5 text-text-secondary font-mono text-[12px]">{e.chasesDelivered ?? 0}</td>
-                    <td className="px-4 py-3.5">
-                      <div className="flex items-center gap-2">
-                        <div className="w-20 h-1.5 bg-surface-inset rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-accent rounded-full transition-all duration-500"
-                            style={{ width: `${e.completionPercent ?? 0}%` }}
-                          />
-                        </div>
-                        <span className="text-[11px] font-mono text-text-muted">{e.completionPercent ?? 0}%</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3.5 text-text-muted text-[12px]">
-                      {e.nextChaseAt
-                        ? format(new Date(e.nextChaseAt), "dd MMM yyyy")
-                        : <span>&mdash;</span>}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
-
-      {/* Documents */}
-      <section className="space-y-3">
-        <h2 className="text-[15px] font-semibold text-text-primary">Documents</h2>
-        {documents.length === 0 ? (
-          <div className="bg-surface-raised rounded-[var(--radius-lg)] border border-border p-8 text-center" style={{ boxShadow: "var(--shadow-card)" }}>
-            <p className="text-[13px] text-text-muted">No documents uploaded yet</p>
-          </div>
-        ) : (
-          <div className="bg-surface-raised rounded-[var(--radius-lg)] border border-border overflow-hidden" style={{ boxShadow: "var(--shadow-card)" }}>
-            <table className="w-full text-[13px]">
-              <thead>
-                <tr className="border-b border-border bg-surface-inset/50">
-                  <th className="text-left px-4 py-3 font-medium text-text-muted text-[12px] uppercase tracking-wider">File</th>
-                  <th className="text-left px-4 py-3 font-medium text-text-muted text-[12px] uppercase tracking-wider">Classification</th>
-                  <th className="text-left px-4 py-3 font-medium text-text-muted text-[12px] uppercase tracking-wider">Status</th>
-                  <th className="text-left px-4 py-3 font-medium text-text-muted text-[12px] uppercase tracking-wider">Xero</th>
-                  <th className="text-left px-4 py-3 font-medium text-text-muted text-[12px] uppercase tracking-wider">Uploaded</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {documents.map((doc) => (
-                  <tr key={doc.id} className="hover:bg-surface-inset/50 transition-colors">
-                    <td className="px-4 py-3.5">
-                      <p className="font-medium text-text-primary truncate max-w-[200px]">{doc.fileName ?? "Unnamed"}</p>
-                      {doc.fileSize && (
-                        <p className="text-[11px] text-text-muted mt-0.5">{(doc.fileSize / 1024).toFixed(0)} KB</p>
-                      )}
-                    </td>
-                    <td className="px-4 py-3.5">
-                      <span className="text-[12px] text-text-secondary">
-                        {doc.aiClassification ?? doc.manualClassification ?? "Unclassified"}
-                      </span>
-                      {doc.aiConfidenceLevel && (
-                        <span className="text-[10px] text-text-muted ml-1.5">({doc.aiConfidenceLevel})</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3.5">
-                      <Badge label={doc.status} colorClass={getDocumentStatusStyle(doc.status)} />
-                    </td>
-                    <td className="px-4 py-3.5">
-                      {doc.xeroPushStatus === "pushed" ? (
-                        <span className="text-[12px] text-teal-600 font-medium">Pushed</span>
-                      ) : doc.xeroPushStatus === "failed" ? (
-                        <span className="text-[12px] text-danger font-medium">Failed</span>
-                      ) : doc.xeroPushStatus === "pending" ? (
-                        <span className="text-[12px] text-text-muted">Pending</span>
-                      ) : (
-                        <span className="text-[12px] text-text-muted">&mdash;</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3.5 text-text-muted text-[12px]">
-                      {formatDistanceToNow(new Date(doc.createdAt), { addSuffix: true })}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
-
-      {/* Chase Timeline (Messages) */}
-      <section className="space-y-3">
-        <h2 className="text-[15px] font-semibold text-text-primary">Chase Timeline</h2>
-        {messages.length === 0 ? (
-          <div className="bg-surface-raised rounded-[var(--radius-lg)] border border-border p-8 text-center" style={{ boxShadow: "var(--shadow-card)" }}>
-            <p className="text-[13px] text-text-muted">No chase messages sent yet</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {messages.map((msg) => (
-              <div key={msg.id} className="bg-surface-raised rounded-[var(--radius-lg)] border border-border p-4" style={{ boxShadow: "var(--shadow-card)" }}>
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <div className={`w-7 h-7 rounded-full flex items-center justify-center ${
-                      msg.channel === "email" ? "bg-purple-50 text-purple-600" :
-                      msg.channel === "whatsapp" ? "bg-green-50 text-green-600" :
-                      "bg-blue-50 text-blue-600"
-                    }`}>
-                      {msg.channel === "email" ? <Mail className="w-3.5 h-3.5" /> :
-                       msg.channel === "whatsapp" ? <MessageSquare className="w-3.5 h-3.5" /> :
-                       <Phone className="w-3.5 h-3.5" />}
-                    </div>
-                    <Badge
-                      label={msg.escalationLevel}
-                      colorClass={getEscalationStyle(msg.escalationLevel)}
-                    />
-                    <span className="text-[11px] text-text-muted font-mono">#{msg.chaseNumber}</span>
-                    <Badge
-                      label={msg.status}
-                      colorClass={getMessageStatusStyle(msg.status)}
+              {activeEnrollment && (
+                <div className="flex items-center gap-3 pt-1">
+                  <span className="text-[13px] text-muted-foreground">
+                    {activeEnrollment.completionPercent ?? 0}% complete
+                  </span>
+                  <div className="w-40 h-1.5 bg-muted rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-primary rounded-full animate-progress-fill"
+                      style={{ width: `${activeEnrollment.completionPercent ?? 0}%` }}
                     />
                   </div>
-                  <span className="text-[11px] text-text-muted">
-                    {format(new Date(msg.createdAt), "dd MMM yyyy HH:mm")}
+                </div>
+              )}
+            </div>
+
+            {/* Quick actions dropdown */}
+            <div className="flex items-center gap-2">
+              <Button
+                variant={client.chaseEnabled ? "outline" : "default"}
+                size="sm"
+                onClick={() =>
+                  updateClient.mutate({
+                    id: clientId,
+                    chaseEnabled: !client.chaseEnabled,
+                  })
+                }
+              >
+                {client.chaseEnabled ? (
+                  <>
+                    <Pause className="w-3.5 h-3.5 mr-1.5" />
+                    Pause Chase
+                  </>
+                ) : (
+                  <>
+                    <Play className="w-3.5 h-3.5 mr-1.5" />
+                    Resume Chase
+                  </>
+                )}
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="icon" className="h-8 w-8">
+                    <MoreHorizontal className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => toast.info("Send reminder coming soon")}>
+                    <Send className="w-3.5 h-3.5 mr-2" />
+                    Send Reminder
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => toast.info("Portal link coming soon")}>
+                    <ExternalLink className="w-3.5 h-3.5 mr-2" />
+                    Open Portal
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      navigator.clipboard.writeText(
+                        `${window.location.origin}/p/${clientId}`,
+                      );
+                      toast.success("Portal link copied");
+                    }}
+                  >
+                    <Copy className="w-3.5 h-3.5 mr-2" />
+                    Copy Portal Link
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <Tabs defaultValue="overview">
+        <TabsList variant="line">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="documents">
+            Documents
+            {documents.length > 0 && (
+              <Badge variant="secondary" className="ml-1.5 text-[10px] px-1.5">
+                {documents.length}
+              </Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="history">
+            Chase History
+            {messages.length > 0 && (
+              <Badge variant="secondary" className="ml-1.5 text-[10px] px-1.5">
+                {messages.length}
+              </Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="notes">Notes</TabsTrigger>
+        </TabsList>
+
+        {/* ─── Overview Tab ─── */}
+        <TabsContent value="overview" className="mt-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Contact Info */}
+            <div className="rounded-lg border bg-card p-5 space-y-3">
+              <h2 className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                Contact
+              </h2>
+              <div className="space-y-2.5 text-[13px]">
+                {client.email && (
+                  <div className="flex items-center gap-2.5">
+                    <Mail className="w-3.5 h-3.5 text-muted-foreground" />
+                    <a
+                      href={`mailto:${client.email}`}
+                      className="text-primary hover:text-primary/80 transition-colors"
+                    >
+                      {client.email}
+                    </a>
+                  </div>
+                )}
+                {client.phone && (
+                  <div className="flex items-center gap-2.5">
+                    <Phone className="w-3.5 h-3.5 text-muted-foreground" />
+                    <span className="text-foreground">{client.phone}</span>
+                  </div>
+                )}
+                {client.whatsappPhone && (
+                  <div className="flex items-center gap-2.5">
+                    <MessageSquare className="w-3.5 h-3.5 text-muted-foreground" />
+                    <span className="text-foreground">{client.whatsappPhone}</span>
+                  </div>
+                )}
+                <div className="flex items-center gap-2.5">
+                  <Send className="w-3.5 h-3.5 text-muted-foreground" />
+                  <span className="text-foreground capitalize">
+                    {client.preferredChannel ?? "whatsapp"}
                   </span>
                 </div>
-                {msg.subject && (
-                  <p className="text-[13px] font-medium text-text-primary mb-1">{msg.subject}</p>
+              </div>
+            </div>
+
+            {/* Tax Details */}
+            <div className="rounded-lg border bg-card p-5 space-y-3">
+              <h2 className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                Details
+              </h2>
+              <div className="space-y-2 text-[13px]">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Type</span>
+                  <span className="font-medium text-foreground">{clientTypeConfig.label}</span>
+                </div>
+                {client.utr && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">UTR</span>
+                    <span className="font-mono text-[12px] text-muted-foreground">
+                      {client.utr}
+                    </span>
+                  </div>
                 )}
-                <p className="text-[13px] text-text-secondary line-clamp-2">{msg.bodyText}</p>
-                {msg.sentAt && (
-                  <div className="flex gap-4 mt-2.5 text-[11px] text-text-muted">
-                    <span>Sent {format(new Date(msg.sentAt), "HH:mm")}</span>
-                    {msg.deliveredAt && <span>Delivered {format(new Date(msg.deliveredAt), "HH:mm")}</span>}
-                    {msg.readAt && <span>Read {format(new Date(msg.readAt), "HH:mm")}</span>}
+                {client.companyNumber && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Co. Number</span>
+                    <span className="font-mono text-[12px] text-muted-foreground">
+                      {client.companyNumber}
+                    </span>
+                  </div>
+                )}
+                {client.vatNumber && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">VAT</span>
+                    <span className="font-mono text-[12px] text-muted-foreground">
+                      {client.vatNumber}
+                    </span>
+                  </div>
+                )}
+                {client.accountingYearEnd && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Year End</span>
+                    <span className="text-foreground">{client.accountingYearEnd}</span>
+                  </div>
+                )}
+                {client.externalRef && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Ref</span>
+                    <span className="font-mono text-[12px] text-muted-foreground">
+                      {client.externalRef}
+                    </span>
                   </div>
                 )}
               </div>
-            ))}
-          </div>
-        )}
-      </section>
+            </div>
 
-      {/* Notes */}
-      <NotesSection clientId={clientId} initialNotes={client.notes ?? ""} />
+            {/* Chase Status */}
+            <div className="rounded-lg border bg-card p-5 space-y-3">
+              <h2 className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                Chase Status
+              </h2>
+              <div className="space-y-2 text-[13px]">
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Status</span>
+                  <Badge variant={client.chaseEnabled ? "default" : "secondary"}>
+                    {client.chaseEnabled ? "Active" : "Paused"}
+                  </Badge>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Last Chased</span>
+                  <span className="text-foreground">
+                    {client.lastChasedAt
+                      ? formatDistanceToNow(new Date(client.lastChasedAt), {
+                          addSuffix: true,
+                        })
+                      : "Never"}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Active Campaigns</span>
+                  <span className="font-medium text-foreground">
+                    {enrollments.filter((e) => e.status === "active" || e.status === "pending").length}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Completed</span>
+                  <span className="font-medium text-foreground">
+                    {enrollments.filter((e) => e.status === "completed").length}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Documents</span>
+                  <span className="font-medium text-foreground">{documents.length}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Tags */}
+          {Array.isArray(client.tags) && (client.tags as string[]).length > 0 && (
+            <div className="flex gap-2 flex-wrap mt-4">
+              {(client.tags as string[]).map((tag) => (
+                <span
+                  key={tag}
+                  className="text-[12px] px-2.5 py-1 rounded-full bg-muted text-muted-foreground ring-1 ring-inset ring-border"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {/* Active Enrollment */}
+          {activeEnrollment && (
+            <div className="rounded-lg border bg-card p-5 mt-4 space-y-3">
+              <h2 className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                Active Enrollment
+              </h2>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-[13px]">
+                <div>
+                  <p className="text-muted-foreground mb-0.5">Campaign</p>
+                  <p className="font-mono text-[12px] text-foreground">
+                    {activeEnrollment.campaignId.slice(0, 8)}&hellip;
+                  </p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground mb-0.5">Escalation</p>
+                  <EscalationBadge
+                    level={activeEnrollment.currentEscalationLevel ?? "gentle"}
+                  />
+                </div>
+                <div>
+                  <p className="text-muted-foreground mb-0.5">Chases Sent</p>
+                  <p className="font-medium text-foreground">
+                    {activeEnrollment.chasesDelivered ?? 0}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground mb-0.5">Next Chase</p>
+                  <p className="text-foreground">
+                    {activeEnrollment.nextChaseAt
+                      ? format(new Date(activeEnrollment.nextChaseAt), "dd MMM yyyy")
+                      : "—"}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 pt-1">
+                <Progress value={activeEnrollment.completionPercent ?? 0} className="h-2" />
+                <span className="text-[12px] text-muted-foreground font-mono shrink-0">
+                  {activeEnrollment.completionPercent ?? 0}%
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* All Enrollments */}
+          {enrollments.length > 0 && (
+            <div className="mt-4 space-y-3">
+              <h2 className="text-[15px] font-semibold text-foreground">
+                Campaign Enrollments
+              </h2>
+              <div className="rounded-lg border bg-card overflow-hidden">
+                <table className="w-full text-[13px]">
+                  <thead>
+                    <tr className="border-b bg-muted/50">
+                      <th className="text-left px-4 py-3 font-medium text-muted-foreground text-[12px] uppercase tracking-wider">
+                        Campaign
+                      </th>
+                      <th className="text-left px-4 py-3 font-medium text-muted-foreground text-[12px] uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="text-left px-4 py-3 font-medium text-muted-foreground text-[12px] uppercase tracking-wider">
+                        Escalation
+                      </th>
+                      <th className="text-left px-4 py-3 font-medium text-muted-foreground text-[12px] uppercase tracking-wider">
+                        Progress
+                      </th>
+                      <th className="text-left px-4 py-3 font-medium text-muted-foreground text-[12px] uppercase tracking-wider">
+                        Next Chase
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {enrollments.map((e) => (
+                      <tr key={e.id} className="hover:bg-muted/50 transition-colors">
+                        <td className="px-4 py-3.5 font-mono text-[12px] text-foreground">
+                          {e.campaignId.slice(0, 8)}&hellip;
+                        </td>
+                        <td className="px-4 py-3.5">
+                          <Badge
+                            variant="outline"
+                            className={cn(
+                              "text-[11px] capitalize",
+                              getEnrollmentStatusStyle(e.status),
+                            )}
+                          >
+                            {e.status}
+                          </Badge>
+                        </td>
+                        <td className="px-4 py-3.5">
+                          <EscalationBadge
+                            level={e.currentEscalationLevel ?? "gentle"}
+                            showLabel={false}
+                          />
+                        </td>
+                        <td className="px-4 py-3.5">
+                          <div className="flex items-center gap-2">
+                            <div className="w-20 h-1.5 bg-muted rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-primary rounded-full transition-all duration-500"
+                                style={{ width: `${e.completionPercent ?? 0}%` }}
+                              />
+                            </div>
+                            <span className="text-[11px] font-mono text-muted-foreground">
+                              {e.completionPercent ?? 0}%
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3.5 text-muted-foreground text-[12px]">
+                          {e.nextChaseAt
+                            ? format(new Date(e.nextChaseAt), "dd MMM yyyy")
+                            : "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </TabsContent>
+
+        {/* ─── Documents Tab ─── */}
+        <TabsContent value="documents" className="mt-6">
+          {documents.length === 0 ? (
+            <div className="rounded-lg border bg-card">
+              <EmptyState
+                icon={FileText}
+                title="No documents uploaded yet"
+                description="Documents will appear here when the client uploads files via the portal."
+              />
+            </div>
+          ) : (
+            <div className="rounded-lg border bg-card overflow-hidden">
+              <table className="w-full text-[13px]">
+                <thead>
+                  <tr className="border-b bg-muted/50">
+                    <th className="text-left px-4 py-3 font-medium text-muted-foreground text-[12px] uppercase tracking-wider">
+                      File
+                    </th>
+                    <th className="text-left px-4 py-3 font-medium text-muted-foreground text-[12px] uppercase tracking-wider">
+                      Classification
+                    </th>
+                    <th className="text-left px-4 py-3 font-medium text-muted-foreground text-[12px] uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="text-left px-4 py-3 font-medium text-muted-foreground text-[12px] uppercase tracking-wider">
+                      Xero
+                    </th>
+                    <th className="text-left px-4 py-3 font-medium text-muted-foreground text-[12px] uppercase tracking-wider">
+                      Uploaded
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {documents.map((doc) => (
+                    <tr key={doc.id} className="hover:bg-muted/50 transition-colors">
+                      <td className="px-4 py-3.5">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded bg-muted flex items-center justify-center shrink-0">
+                            <FileText className="w-4 h-4 text-muted-foreground" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-foreground truncate max-w-[200px]">
+                              {doc.fileName ?? "Unnamed"}
+                            </p>
+                            {doc.fileSize && (
+                              <p className="text-[11px] text-muted-foreground">
+                                {(doc.fileSize / 1024).toFixed(0)} KB
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3.5">
+                        <span className="text-[12px] text-foreground">
+                          {doc.aiClassification ??
+                            doc.manualClassification ??
+                            "Unclassified"}
+                        </span>
+                        {doc.aiConfidenceLevel && (
+                          <span
+                            className={cn(
+                              "text-[10px] ml-1.5 px-1.5 py-0.5 rounded-full",
+                              doc.aiConfidenceLevel === "high"
+                                ? "bg-status-active/10 text-status-active"
+                                : doc.aiConfidenceLevel === "medium"
+                                  ? "bg-status-overdue/10 text-status-overdue"
+                                  : "bg-status-critical/10 text-status-critical",
+                            )}
+                          >
+                            {doc.aiConfidenceLevel}
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3.5">
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            "text-[11px] capitalize",
+                            getDocumentStatusStyle(doc.status),
+                          )}
+                        >
+                          {doc.status}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-3.5">
+                        {doc.xeroPushStatus === "pushed" ? (
+                          <span className="text-[12px] text-teal-400 font-medium flex items-center gap-1">
+                            <CheckCircle className="w-3.5 h-3.5" />
+                            Pushed
+                          </span>
+                        ) : doc.xeroPushStatus === "failed" ? (
+                          <span className="text-[12px] text-destructive font-medium">
+                            Failed
+                          </span>
+                        ) : doc.xeroPushStatus === "pending" ? (
+                          <span className="text-[12px] text-muted-foreground flex items-center gap-1">
+                            <Clock className="w-3.5 h-3.5" />
+                            Pending
+                          </span>
+                        ) : (
+                          <span className="text-[12px] text-muted-foreground/50">&mdash;</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3.5 text-muted-foreground text-[12px]">
+                        {formatDistanceToNow(new Date(doc.createdAt), { addSuffix: true })}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </TabsContent>
+
+        {/* ─── Chase History Tab ─── */}
+        <TabsContent value="history" className="mt-6">
+          {messages.length === 0 ? (
+            <div className="rounded-lg border bg-card">
+              <EmptyState
+                icon={Send}
+                title="No chase messages sent yet"
+                description="Chase messages will appear here as the campaign progresses."
+              />
+            </div>
+          ) : (
+            <div className="rounded-lg border bg-card p-5">
+              <ChaseTimeline
+                steps={messages
+                  .slice()
+                  .sort(
+                    (a, b) =>
+                      new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+                  )
+                  .map((msg, i, arr) => {
+                    const numLevel = (ESCALATION_MAP[msg.escalationLevel] ?? 1) as
+                      | 1
+                      | 2
+                      | 3
+                      | 4
+                      | 5;
+                    const isLast = i === arr.length - 1;
+                    const isSent = msg.status === "sent" || msg.status === "delivered" || msg.status === "read";
+                    const isScheduled = msg.status === "pending" || msg.status === "queued";
+
+                    let deliveryStatus: "delivered" | "opened" | "failed" | "not_opened" | null =
+                      null;
+                    if (msg.readAt || msg.emailOpenedAt) deliveryStatus = "opened";
+                    else if (msg.deliveredAt) deliveryStatus = "delivered";
+                    else if (msg.failedAt) deliveryStatus = "failed";
+                    else if (isSent) deliveryStatus = "not_opened";
+
+                    return {
+                      id: msg.id,
+                      level: numLevel,
+                      channel: msg.channel as "email" | "sms" | "whatsapp",
+                      label: `${msg.channel === "email" ? "Email" : msg.channel === "sms" ? "SMS" : "WhatsApp"} — Chase #${msg.chaseNumber}`,
+                      date: msg.sentAt || msg.scheduledFor || msg.createdAt,
+                      status: isScheduled
+                        ? ("scheduled" as const)
+                        : isLast && isSent
+                          ? ("current" as const)
+                          : ("completed" as const),
+                      deliveryStatus,
+                      messagePreview: msg.bodyText?.slice(0, 120) ?? null,
+                    };
+                  })}
+              />
+            </div>
+          )}
+        </TabsContent>
+
+        {/* ─── Notes Tab ─── */}
+        <TabsContent value="notes" className="mt-6">
+          <NotesSection clientId={clientId} initialNotes={client.notes ?? ""} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
 
-// ─── Notes Component ──────────────────────────────────────────────
-
-function NotesSection({ clientId, initialNotes }: { clientId: string; initialNotes: string }) {
+/* ---------- Notes Component ---------- */
+function NotesSection({
+  clientId,
+  initialNotes,
+}: {
+  clientId: string;
+  initialNotes: string;
+}) {
   const [editing, setEditing] = useState(false);
   const [notes, setNotes] = useState(initialNotes);
   const updateClient = trpc.clients.update.useMutation({
-    onSuccess: () => setEditing(false),
+    onSuccess: () => {
+      setEditing(false);
+      toast.success("Notes saved");
+    },
   });
 
   return (
-    <section className="space-y-3">
+    <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h2 className="text-[15px] font-semibold text-text-primary">Notes</h2>
+        <h2 className="text-[15px] font-semibold text-foreground">Notes</h2>
         {!editing && (
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-[13px]"
             onClick={() => setEditing(true)}
-            className="text-[13px] text-accent hover:text-accent-hover flex items-center gap-1.5 transition-colors"
-            aria-label="Edit notes"
           >
-            <Edit3 className="w-3.5 h-3.5" /> Edit
-          </button>
+            <Edit3 className="w-3.5 h-3.5 mr-1.5" /> Edit
+          </Button>
         )}
       </div>
       {editing ? (
         <div className="space-y-3">
-          <textarea
+          <Textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            rows={4}
-            className="w-full px-3 py-2.5 border border-border rounded-[var(--radius-md)] text-[13px] focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all"
+            rows={6}
             placeholder="Add notes about this client..."
+            className="text-[13px]"
           />
           <div className="flex gap-2">
-            <button
+            <Button
+              size="sm"
               onClick={() => updateClient.mutate({ id: clientId, notes })}
               disabled={updateClient.isPending}
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-accent text-white rounded-[var(--radius-md)] text-[13px] font-medium hover:bg-accent-hover disabled:opacity-50 transition-colors shadow-sm"
             >
-              <Save className="w-3.5 h-3.5" />
+              <Save className="w-3.5 h-3.5 mr-1.5" />
               {updateClient.isPending ? "Saving..." : "Save"}
-            </button>
-            <button
-              onClick={() => { setEditing(false); setNotes(initialNotes); }}
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-surface-inset text-text-secondary rounded-[var(--radius-md)] text-[13px] font-medium hover:bg-border transition-colors"
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setEditing(false);
+                setNotes(initialNotes);
+              }}
             >
-              <X className="w-3.5 h-3.5" /> Cancel
-            </button>
+              <X className="w-3.5 h-3.5 mr-1.5" /> Cancel
+            </Button>
           </div>
         </div>
       ) : (
-        <div className="bg-surface-raised rounded-[var(--radius-lg)] border border-border p-5" style={{ boxShadow: "var(--shadow-card)" }}>
-          <p className="text-[13px] text-text-secondary whitespace-pre-wrap leading-relaxed">
+        <div className="rounded-lg border bg-card p-5">
+          <p className="text-[13px] text-muted-foreground whitespace-pre-wrap leading-relaxed">
             {initialNotes || "No notes yet. Click Edit to add some."}
           </p>
         </div>
       )}
-    </section>
+    </div>
   );
 }

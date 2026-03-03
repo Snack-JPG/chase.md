@@ -143,7 +143,7 @@ export default function NewCampaignPage() {
                 disabled={!isComplete}
                 className={`flex items-center gap-2 px-3 py-2 rounded-[var(--radius-md)] text-[12px] font-medium transition-colors w-full ${
                   isCurrent
-                    ? "bg-accent/10 text-accent border border-accent/20"
+                    ? "bg-primary/10 text-primary border border-primary/20"
                     : isComplete
                       ? "bg-surface-inset text-text-secondary hover:bg-border cursor-pointer"
                       : "bg-surface-inset/50 text-text-muted cursor-default"
@@ -191,7 +191,7 @@ export default function NewCampaignPage() {
           <button
             onClick={() => setStep(step + 1)}
             disabled={!canAdvance()}
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-accent text-white rounded-[var(--radius-md)] hover:bg-accent-hover text-[13px] font-medium transition-colors disabled:opacity-50 shadow-sm"
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-[var(--radius-md)] hover:bg-primary/90 text-[13px] font-medium transition-colors disabled:opacity-50 shadow-sm"
           >
             Next <ArrowRight className="w-3.5 h-3.5" />
           </button>
@@ -208,7 +208,7 @@ export default function NewCampaignPage() {
             <button
               onClick={() => handleSubmit("active")}
               disabled={createCampaign.isPending}
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-accent text-white rounded-[var(--radius-md)] hover:bg-accent-hover text-[13px] font-medium transition-colors disabled:opacity-50 shadow-sm"
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-[var(--radius-md)] hover:bg-primary/90 text-[13px] font-medium transition-colors disabled:opacity-50 shadow-sm"
             >
               <Rocket className="w-3.5 h-3.5" />
               {createCampaign.isPending ? "Launching..." : "Launch Campaign"}
@@ -238,7 +238,7 @@ function StepDetails({
           placeholder="e.g. 2024/25 Self Assessment"
           value={form.name}
           onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-          className="w-full px-3 py-2.5 border border-border rounded-[var(--radius-md)] text-[13px] placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all"
+          className="w-full px-3 py-2.5 border border-border rounded-[var(--radius-md)] text-[13px] placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-accent transition-all"
         />
       </div>
 
@@ -247,7 +247,7 @@ function StepDetails({
         <select
           value={form.taxObligation}
           onChange={(e) => setForm((f) => ({ ...f, taxObligation: e.target.value as TaxObligation }))}
-          className="w-full px-3 py-2.5 border border-border rounded-[var(--radius-md)] text-[13px] focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all"
+          className="w-full px-3 py-2.5 border border-border rounded-[var(--radius-md)] text-[13px] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-accent transition-all"
         >
           <option value="">Select...</option>
           {TAX_OBLIGATIONS.map((o) => (
@@ -264,7 +264,7 @@ function StepDetails({
             placeholder="2024/25"
             value={form.taxYear}
             onChange={(e) => setForm((f) => ({ ...f, taxYear: e.target.value }))}
-            className="w-full px-3 py-2.5 border border-border rounded-[var(--radius-md)] text-[13px] placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all"
+            className="w-full px-3 py-2.5 border border-border rounded-[var(--radius-md)] text-[13px] placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-accent transition-all"
           />
         </div>
         <div>
@@ -273,7 +273,7 @@ function StepDetails({
             type="date"
             value={form.deadlineDate}
             onChange={(e) => setForm((f) => ({ ...f, deadlineDate: e.target.value }))}
-            className="w-full px-3 py-2.5 border border-border rounded-[var(--radius-md)] text-[13px] focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all"
+            className="w-full px-3 py-2.5 border border-border rounded-[var(--radius-md)] text-[13px] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-accent transition-all"
           />
         </div>
       </div>
@@ -287,7 +287,7 @@ function StepDetails({
           value={form.description}
           onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
           rows={3}
-          className="w-full px-3 py-2.5 border border-border rounded-[var(--radius-md)] text-[13px] placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all"
+          className="w-full px-3 py-2.5 border border-border rounded-[var(--radius-md)] text-[13px] placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-accent transition-all"
         />
       </div>
     </div>
@@ -339,7 +339,7 @@ function StepClients({
         <p className="text-[13px] text-text-secondary">
           Select clients to enrol in this campaign.
         </p>
-        <span className="text-[12px] font-medium text-accent bg-accent/10 px-2.5 py-1 rounded-full">
+        <span className="text-[12px] font-medium text-primary bg-primary/10 px-2.5 py-1 rounded-full">
           {form.clientIds.length} selected
         </span>
       </div>
@@ -352,7 +352,7 @@ function StepClients({
           placeholder="Search by name, company, or email..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full pl-10 pr-4 py-2.5 border border-border rounded-[var(--radius-md)] text-[13px] placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all"
+          className="w-full pl-10 pr-4 py-2.5 border border-border rounded-[var(--radius-md)] text-[13px] placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-accent transition-all"
         />
       </div>
 
@@ -360,7 +360,7 @@ function StepClients({
       <div className="flex gap-2">
         <button
           onClick={selectAll}
-          className="text-[12px] font-medium text-accent hover:text-accent-hover transition-colors"
+          className="text-[12px] font-medium text-primary hover:text-primary/80 transition-colors"
         >
           Select All ({filtered.length})
         </button>
@@ -395,14 +395,14 @@ function StepClients({
               <label
                 key={client.id}
                 className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors ${
-                  selected ? "bg-accent/5" : "hover:bg-surface-inset/50"
+                  selected ? "bg-primary/5" : "hover:bg-surface-inset/50"
                 }`}
               >
                 <input
                   type="checkbox"
                   checked={selected}
                   onChange={() => toggleClient(client.id)}
-                  className="w-4 h-4 rounded border-border text-accent focus:ring-accent/20 flex-shrink-0"
+                  className="w-4 h-4 rounded border-border text-primary focus:ring-primary/20 flex-shrink-0"
                 />
                 <div className="flex-1 min-w-0">
                   <p className="text-[13px] font-medium text-text-primary truncate">
@@ -471,7 +471,7 @@ function StepDocuments({
           <p className="text-[12px] text-text-muted mt-0.5">This step is optional &mdash; you can skip if not needed.</p>
         </div>
         {form.documentTemplateIds.length > 0 && (
-          <span className="text-[12px] font-medium text-accent bg-accent/10 px-2.5 py-1 rounded-full">
+          <span className="text-[12px] font-medium text-primary bg-primary/10 px-2.5 py-1 rounded-full">
             {form.documentTemplateIds.length} selected
           </span>
         )}
@@ -497,14 +497,14 @@ function StepDocuments({
               <label
                 key={template.id}
                 className={`flex items-center gap-3 px-4 py-3.5 cursor-pointer transition-colors ${
-                  selected ? "bg-accent/5" : "hover:bg-surface-inset/50"
+                  selected ? "bg-primary/5" : "hover:bg-surface-inset/50"
                 }`}
               >
                 <input
                   type="checkbox"
                   checked={selected}
                   onChange={() => toggleTemplate(template.id)}
-                  className="w-4 h-4 rounded border-border text-accent focus:ring-accent/20 flex-shrink-0"
+                  className="w-4 h-4 rounded border-border text-primary focus:ring-primary/20 flex-shrink-0"
                 />
                 <div className="flex-1 min-w-0">
                   <p className="text-[13px] font-medium text-text-primary">{template.name}</p>
@@ -561,7 +561,7 @@ function StepSchedule({
                 onClick={() => toggleChannel(ch.value)}
                 className={`px-4 py-2.5 rounded-[var(--radius-md)] text-[13px] font-medium transition-colors border ${
                   active
-                    ? "bg-accent/10 text-accent border-accent/30"
+                    ? "bg-primary/10 text-primary border-primary/30"
                     : "bg-surface-inset text-text-muted border-border hover:bg-border"
                 }`}
               >
@@ -585,7 +585,7 @@ function StepSchedule({
             max={90}
             value={form.chaseDaysBetween}
             onChange={(e) => setForm((f) => ({ ...f, chaseDaysBetween: parseInt(e.target.value) || 7 }))}
-            className="w-full px-3 py-2.5 border border-border rounded-[var(--radius-md)] text-[13px] focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all"
+            className="w-full px-3 py-2.5 border border-border rounded-[var(--radius-md)] text-[13px] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-accent transition-all"
           />
         </div>
         <div>
@@ -596,7 +596,7 @@ function StepSchedule({
             max={20}
             value={form.maxChases}
             onChange={(e) => setForm((f) => ({ ...f, maxChases: parseInt(e.target.value) || 6 }))}
-            className="w-full px-3 py-2.5 border border-border rounded-[var(--radius-md)] text-[13px] focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all"
+            className="w-full px-3 py-2.5 border border-border rounded-[var(--radius-md)] text-[13px] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-accent transition-all"
           />
         </div>
         <div>
@@ -607,7 +607,7 @@ function StepSchedule({
             max={20}
             value={form.escalateAfterChase}
             onChange={(e) => setForm((f) => ({ ...f, escalateAfterChase: parseInt(e.target.value) || 4 }))}
-            className="w-full px-3 py-2.5 border border-border rounded-[var(--radius-md)] text-[13px] focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all"
+            className="w-full px-3 py-2.5 border border-border rounded-[var(--radius-md)] text-[13px] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-accent transition-all"
           />
         </div>
       </div>
@@ -621,7 +621,7 @@ function StepSchedule({
           max={90}
           value={form.gracePeriodDays}
           onChange={(e) => setForm((f) => ({ ...f, gracePeriodDays: parseInt(e.target.value) || 0 }))}
-          className="w-full px-3 py-2.5 border border-border rounded-[var(--radius-md)] text-[13px] focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all"
+          className="w-full px-3 py-2.5 border border-border rounded-[var(--radius-md)] text-[13px] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-accent transition-all"
         />
       </div>
 
@@ -633,7 +633,7 @@ function StepSchedule({
             role="switch"
             aria-checked={form.skipWeekends}
             onClick={() => setForm((f) => ({ ...f, skipWeekends: !f.skipWeekends }))}
-            className={`relative w-9 h-5 rounded-full transition-colors ${form.skipWeekends ? "bg-accent" : "bg-border"}`}
+            className={`relative w-9 h-5 rounded-full transition-colors ${form.skipWeekends ? "bg-primary" : "bg-border"}`}
           >
             <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform shadow-sm ${form.skipWeekends ? "translate-x-4" : ""}`} />
           </button>
@@ -646,7 +646,7 @@ function StepSchedule({
             role="switch"
             aria-checked={form.skipBankHolidays}
             onClick={() => setForm((f) => ({ ...f, skipBankHolidays: !f.skipBankHolidays }))}
-            className={`relative w-9 h-5 rounded-full transition-colors ${form.skipBankHolidays ? "bg-accent" : "bg-border"}`}
+            className={`relative w-9 h-5 rounded-full transition-colors ${form.skipBankHolidays ? "bg-primary" : "bg-border"}`}
           >
             <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform shadow-sm ${form.skipBankHolidays ? "translate-x-4" : ""}`} />
           </button>

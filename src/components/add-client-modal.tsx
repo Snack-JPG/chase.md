@@ -45,7 +45,7 @@ export function AddClientModal({ onClose, onSubmit, isLoading, error }: {
                 type="text"
                 value={form.firstName}
                 onChange={(e) => setForm({ ...form, firstName: e.target.value })}
-                className="w-full px-3 py-2.5 border border-border rounded-[var(--radius-md)] text-[13px] focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all"
+                className="w-full px-3 py-2.5 border border-border rounded-[var(--radius-md)] text-[13px] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-accent transition-all"
               />
             </div>
             <div>
@@ -54,7 +54,7 @@ export function AddClientModal({ onClose, onSubmit, isLoading, error }: {
                 type="text"
                 value={form.lastName}
                 onChange={(e) => setForm({ ...form, lastName: e.target.value })}
-                className="w-full px-3 py-2.5 border border-border rounded-[var(--radius-md)] text-[13px] focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all"
+                className="w-full px-3 py-2.5 border border-border rounded-[var(--radius-md)] text-[13px] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-accent transition-all"
               />
             </div>
           </div>
@@ -64,7 +64,7 @@ export function AddClientModal({ onClose, onSubmit, isLoading, error }: {
               type="email"
               value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
-              className="w-full px-3 py-2.5 border border-border rounded-[var(--radius-md)] text-[13px] focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all"
+              className="w-full px-3 py-2.5 border border-border rounded-[var(--radius-md)] text-[13px] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-accent transition-all"
             />
           </div>
           <div>
@@ -73,7 +73,7 @@ export function AddClientModal({ onClose, onSubmit, isLoading, error }: {
               type="tel"
               value={form.phone}
               onChange={(e) => setForm({ ...form, phone: e.target.value })}
-              className="w-full px-3 py-2.5 border border-border rounded-[var(--radius-md)] text-[13px] focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all"
+              className="w-full px-3 py-2.5 border border-border rounded-[var(--radius-md)] text-[13px] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-accent transition-all"
             />
           </div>
           <div>
@@ -81,7 +81,7 @@ export function AddClientModal({ onClose, onSubmit, isLoading, error }: {
             <select
               value={form.clientType}
               onChange={(e) => setForm({ ...form, clientType: e.target.value as typeof form.clientType })}
-              className="w-full px-3 py-2.5 border border-border rounded-[var(--radius-md)] text-[13px] focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all"
+              className="w-full px-3 py-2.5 border border-border rounded-[var(--radius-md)] text-[13px] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-accent transition-all"
             >
               {Object.entries(CLIENT_TYPE_STYLES).map(([value, config]) => (
                 <option key={value} value={value}>{config.label}</option>
@@ -106,7 +106,7 @@ export function AddClientModal({ onClose, onSubmit, isLoading, error }: {
               clientType: form.clientType,
             })}
             disabled={isLoading || !form.firstName || !form.lastName}
-            className="flex-1 px-4 py-2.5 bg-accent text-white rounded-[var(--radius-md)] hover:bg-accent-hover text-[13px] font-medium disabled:opacity-50 transition-colors shadow-sm"
+            className="flex-1 px-4 py-2.5 bg-primary text-primary-foreground rounded-[var(--radius-md)] hover:bg-primary/90 text-[13px] font-medium disabled:opacity-50 transition-colors shadow-sm"
           >
             {isLoading ? "Adding..." : "Add Client"}
           </button>

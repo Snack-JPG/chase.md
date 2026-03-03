@@ -2,6 +2,7 @@ import { auth, currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { TRPCProvider } from "@/lib/trpc/provider";
 import { DashboardShell } from "@/components/dashboard-shell";
+import { CommandPalette } from "@/components/command-palette";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
@@ -18,6 +19,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       >
         {children}
       </DashboardShell>
+      <CommandPalette />
     </TRPCProvider>
   );
 }

@@ -33,7 +33,7 @@ function XeroWebhookConfig() {
       <h3 className="text-[13px] font-semibold text-text-primary">Xero Webhooks</h3>
       <p className="text-[12px] text-text-muted leading-relaxed">
         Enable real-time contact sync. Register a webhook in your{" "}
-        <a href="https://developer.xero.com/app/manage" target="_blank" rel="noopener noreferrer" className="text-accent hover:text-accent-hover underline underline-offset-2">
+        <a href="https://developer.xero.com/app/manage" target="_blank" rel="noopener noreferrer" className="text-primary hover:text-primary/80 underline underline-offset-2">
           Xero Developer Dashboard
         </a>{" "}
         with the URL below, then paste the webhook key here.
@@ -66,14 +66,14 @@ function XeroWebhookConfig() {
             placeholder={xeroStatus.data.webhookKeySet ? "Key saved" : "Paste webhook key from Xero"}
             value={webhookKey}
             onChange={(e) => setWebhookKey(e.target.value)}
-            className="flex-1 px-3 py-2 border border-border rounded-[var(--radius-md)] text-[12px] placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all"
+            className="flex-1 px-3 py-2 border border-border rounded-[var(--radius-md)] text-[12px] placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-accent transition-all"
           />
           <button
             onClick={() => {
               if (webhookKey.trim()) saveWebhookKey.mutate({ webhookKey: webhookKey.trim() });
             }}
             disabled={!webhookKey.trim() || saveWebhookKey.isPending}
-            className="text-[12px] px-3.5 py-2 bg-accent text-white rounded-[var(--radius-md)] hover:bg-accent-hover disabled:opacity-50 font-medium transition-colors"
+            className="text-[12px] px-3.5 py-2 bg-primary text-primary-foreground rounded-[var(--radius-md)] hover:bg-primary/90 disabled:opacity-50 font-medium transition-colors"
           >
             {saveWebhookKey.isPending ? "Saving..." : "Save"}
           </button>
@@ -299,7 +299,7 @@ export default function SettingsPage() {
                 type={field.type}
                 value={details[field.key]}
                 onChange={(e) => setDetails({ ...details, [field.key]: e.target.value })}
-                className="w-full px-3 py-2.5 border border-border rounded-[var(--radius-md)] text-[13px] focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all"
+                className="w-full px-3 py-2.5 border border-border rounded-[var(--radius-md)] text-[13px] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-accent transition-all"
               />
             </div>
           ))}
@@ -307,7 +307,7 @@ export default function SettingsPage() {
         <button
           onClick={saveDetails}
           disabled={updatePractice.isPending}
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-accent text-white rounded-[var(--radius-md)] hover:bg-accent-hover text-[13px] font-medium disabled:opacity-50 transition-colors shadow-sm"
+          className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-[var(--radius-md)] hover:bg-primary/90 text-[13px] font-medium disabled:opacity-50 transition-colors shadow-sm"
         >
           {updatePractice.isPending && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
           {updatePractice.isPending ? "Saving..." : "Save Changes"}
@@ -326,7 +326,7 @@ export default function SettingsPage() {
             <select
               value={prefs.defaultChaseChannel}
               onChange={(e) => setPrefs({ ...prefs, defaultChaseChannel: e.target.value as typeof prefs.defaultChaseChannel })}
-              className="w-full px-3 py-2.5 border border-border rounded-[var(--radius-md)] text-[13px] focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all"
+              className="w-full px-3 py-2.5 border border-border rounded-[var(--radius-md)] text-[13px] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-accent transition-all"
             >
               <option value="whatsapp">WhatsApp (recommended)</option>
               <option value="email">Email</option>
@@ -338,7 +338,7 @@ export default function SettingsPage() {
             <select
               value={prefs.timezone}
               onChange={(e) => setPrefs({ ...prefs, timezone: e.target.value })}
-              className="w-full px-3 py-2.5 border border-border rounded-[var(--radius-md)] text-[13px] focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all"
+              className="w-full px-3 py-2.5 border border-border rounded-[var(--radius-md)] text-[13px] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-accent transition-all"
             >
               <option value="Europe/London">UK (Europe/London)</option>
             </select>
@@ -349,7 +349,7 @@ export default function SettingsPage() {
               type="time"
               value={prefs.businessHoursStart}
               onChange={(e) => setPrefs({ ...prefs, businessHoursStart: e.target.value })}
-              className="w-full px-3 py-2.5 border border-border rounded-[var(--radius-md)] text-[13px] focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all"
+              className="w-full px-3 py-2.5 border border-border rounded-[var(--radius-md)] text-[13px] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-accent transition-all"
             />
           </div>
           <div>
@@ -358,14 +358,14 @@ export default function SettingsPage() {
               type="time"
               value={prefs.businessHoursEnd}
               onChange={(e) => setPrefs({ ...prefs, businessHoursEnd: e.target.value })}
-              className="w-full px-3 py-2.5 border border-border rounded-[var(--radius-md)] text-[13px] focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all"
+              className="w-full px-3 py-2.5 border border-border rounded-[var(--radius-md)] text-[13px] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-accent transition-all"
             />
           </div>
         </div>
         <button
           onClick={savePrefs}
           disabled={updatePractice.isPending}
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-accent text-white rounded-[var(--radius-md)] hover:bg-accent-hover text-[13px] font-medium disabled:opacity-50 transition-colors shadow-sm"
+          className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-[var(--radius-md)] hover:bg-primary/90 text-[13px] font-medium disabled:opacity-50 transition-colors shadow-sm"
         >
           {updatePractice.isPending && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
           {updatePractice.isPending ? "Saving..." : "Save Preferences"}

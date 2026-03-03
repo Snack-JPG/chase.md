@@ -39,7 +39,7 @@ export default function CampaignsPage() {
         </div>
         <button
           onClick={() => router.push("/dashboard/campaigns/new")}
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-accent text-white rounded-[var(--radius-md)] hover:bg-accent-hover text-[13px] font-medium transition-colors shadow-sm"
+          className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-[var(--radius-md)] hover:bg-primary/90 text-[13px] font-medium transition-colors shadow-sm"
         >
           <Plus className="w-4 h-4" />
           New Campaign
@@ -73,7 +73,7 @@ export default function CampaignsPage() {
           </p>
           <button
             onClick={() => router.push("/dashboard/campaigns/new")}
-            className="mt-4 inline-flex items-center gap-2 px-4 py-2.5 bg-accent text-white rounded-[var(--radius-md)] text-[13px] font-medium hover:bg-accent-hover transition-colors shadow-sm"
+            className="mt-4 inline-flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-[var(--radius-md)] text-[13px] font-medium hover:bg-primary/90 transition-colors shadow-sm"
           >
             <Plus className="w-4 h-4" />
             Create Your First Campaign
@@ -119,7 +119,7 @@ export default function CampaignsPage() {
                       <div className="flex items-center gap-2.5">
                         <div className="w-20 h-1.5 bg-surface-inset rounded-full overflow-hidden">
                           <div
-                            className="h-full bg-accent rounded-full transition-all duration-500"
+                            className="h-full bg-primary rounded-full transition-all duration-500"
                             style={{ width: `${completion}%` }}
                           />
                         </div>
