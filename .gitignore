@@ -37,3 +37,4 @@ src/server/db/migrations/meta/
 
 # clerk configuration (can include secrets)
 /.clerk/
+.vercel
